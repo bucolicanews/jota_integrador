@@ -3,12 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { SaldoInsuficienteFilter } from './common/filtros/saldo-insuficiente.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
   app.use(helmet());
+  app.useGlobalFilters(new SaldoInsuficienteFilter());
 
   // Nunca CORS aberto em produção (docs/SEGURANCA.md) -- allowlist explícita via env.
   const origensPermitidas = config

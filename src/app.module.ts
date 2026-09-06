@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { ContadoresModule } from './contadores/contadores.module';
 import { SerproModule } from './serpro/serpro.module';
+import { CreditosModule } from './creditos/creditos.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SerproModule } from './serpro/serpro.module';
     AuthModule,
     EmpresasModule,
     ContadoresModule,
+    CreditosModule,
     SerproModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -1,4 +1,7 @@
 import { ForbiddenException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { custoDaOperacao } from '../../../creditos/dominio/credito';
+import { DebitarCreditosUseCase } from '../../../creditos/aplicacao/casos-de-uso/debitar-creditos.usecase';
+import { EstornarCreditosUseCase } from '../../../creditos/aplicacao/casos-de-uso/estornar-creditos.usecase';
 import {
   EMPRESAS_REPOSITORIO,
   EmpresasRepositorioPort,
@@ -23,6 +26,8 @@ export class ConsultarCcmeiUseCase {
     @Inject(VERIFICAR_ACESSO_SERPRO) private readonly verificarAcesso: VerificarAcessoSerproPort,
     @Inject(SERPRO_GATEWAY) private readonly gateway: SerproGatewayPort,
     @Inject(CONSULTAS_SERPRO_REPOSITORIO) private readonly consultasRepositorio: ConsultasSerproRepositorioPort,
+    private readonly debitarCreditos: DebitarCreditosUseCase,
+    private readonly estornarCreditos: EstornarCreditosUseCase,
   ) {}
 
   async executar(empresaId: string): Promise<unknown> {
@@ -37,6 +42,16 @@ export class ConsultarCcmeiUseCase {
     if (!acesso.valido) {
       throw new ForbiddenException(acesso.motivo ?? 'Empresa sem acesso válido ao SERPRO');
     }
+
+    // Débito ANTES da chamada -- falha rápido (sem gastar cota do SERPRO) se o
+    // contador não tem crédito. SaldoInsuficienteError sobe crua daqui -- convertida
+    // pra HTTP 402 pelo filtro global (src/common/filtros/saldo-insuficiente.filter.ts).
+    await this.debitarCreditos.executar(
+      empresa.contadorId,
+      empresaId,
+      ID_SISTEMA_CCMEI,
+      `Consulta CCMEI -- empresa ${empresaId}`,
+    );
 
     let sucesso = false;
     let codigoErro: string | null = null;
@@ -55,21 +70,28 @@ export class ConsultarCcmeiUseCase {
       }
     } catch {
       codigoErro = 'ERRO_COMUNICACAO';
-    } finally {
-      // Registrar mesmo em falha -- log de auditoria não pode ficar incompleto por
-      // causa de exceção (docs/BANCO_DE_DADOS.md §4).
-      await this.consultasRepositorio.registrar({
-        contadorId: empresa.contadorId,
-        empresaId,
-        idSistema: ID_SISTEMA_CCMEI,
-        idServico: ID_SERVICO_DADOS_CCMEI,
-        sucesso,
-        codigoErro,
-        // TODO: módulo de créditos ainda não existe -- consumo fica em 0 até existir
-        // (docs/BANCO_DE_DADOS.md §Pendências).
-        creditosConsumidos: 0,
-      });
     }
+
+    if (!sucesso) {
+      // Compensação (saga, docs/SEGURANCA.md §6): SERPRO falhou depois do débito --
+      // devolve o mesmo custo que foi debitado, nunca deixa o contador pagando por
+      // uma consulta que não aconteceu.
+      await this.estornarCreditos.executar(
+        empresa.contadorId,
+        custoDaOperacao(ID_SISTEMA_CCMEI),
+        `Consulta CCMEI falhou (${codigoErro})`,
+      );
+    }
+
+    await this.consultasRepositorio.registrar({
+      contadorId: empresa.contadorId,
+      empresaId,
+      idSistema: ID_SISTEMA_CCMEI,
+      idServico: ID_SERVICO_DADOS_CCMEI,
+      sucesso,
+      codigoErro,
+      creditosConsumidos: sucesso ? custoDaOperacao(ID_SISTEMA_CCMEI) : 0,
+    });
 
     if (!sucesso) {
       // Nunca vazar payload/erro bruto do SERPRO pro cliente (docs/SEGURANCA.md §3).

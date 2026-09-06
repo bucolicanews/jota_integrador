@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CreditosModule } from '../creditos/creditos.module';
 import { EmpresasModule } from '../empresas/empresas.module';
 import { ConsultarCcmeiUseCase } from './aplicacao/casos-de-uso/consultar-ccmei.usecase';
 import { CONSULTAS_SERPRO_REPOSITORIO } from './aplicacao/portas/consultas-serpro-repositorio.port';
@@ -11,7 +12,10 @@ import { SerproGatewayHttp } from './infraestrutura/serpro-gateway.http';
 import { VerificarAcessoSerproSupabase } from './infraestrutura/verificar-acesso-serpro.supabase';
 
 @Module({
-  imports: [EmpresasModule], // EMPRESAS_REPOSITORIO -- resolver CNPJ/contadorId da empresa consultada
+  imports: [
+    EmpresasModule, // EMPRESAS_REPOSITORIO -- resolver CNPJ/contadorId da empresa consultada
+    CreditosModule, // DebitarCreditosUseCase/EstornarCreditosUseCase -- pagar pela consulta
+  ],
   controllers: [SerproController],
   providers: [
     SerproAuthService,
