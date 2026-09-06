@@ -36,7 +36,7 @@ Cliente → App Jota (React) → API Jota (NestJS) → SERPRO / Integra Contador
 Antes de implementar qualquer coisa, ler nesta ordem:
 
 1. [`CLAUDE.md`](CLAUDE.md) — visão geral e regras invioláveis
-2. [`docs/SEGURANCA.md`](docs/SEGURANCA.md) — política de segurança (certificado digital, SERPRO, isolamento contador/empresa, créditos)
+2. [`docs/SEGURANCA.md`](docs/SEGURANCA.md) — política de segurança (certificado digital da plataforma, procuração eletrônica, SERPRO, isolamento contador/empresa, créditos)
 3. [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — camadas, modelo de dados, permissões
 4. [`docs/TESTES.md`](docs/TESTES.md) — estratégia e obrigatoriedade de testes
 5. [`docs/UX-UI.md`](docs/UX-UI.md) — diretrizes de design para os dois perfis
@@ -45,7 +45,7 @@ Este projeto herda as políticas de segurança, engenharia e design do ecossiste
 
 ## Ponto de maior cuidado
 
-O dado mais crítico do sistema é o **certificado digital (A1/A3)** de cada empresa — permite assinar digitalmente perante o Fisco. Nunca versionar, nunca expor ao frontend, sempre em cofre criptografado isolado. Ver `docs/SEGURANCA.md §1`.
+O dado mais crítico do sistema é o **certificado digital e-CNPJ da própria Jota** — único na plataforma, não um certificado por empresa cliente. O acesso a cada empresa é liberado por procuração eletrônica, não por certificado próprio dela. Nunca versionar, nunca expor ao frontend, sempre em cofre criptografado isolado. Ver `docs/SEGURANCA.md §1-2`.
 
 ## Status
 

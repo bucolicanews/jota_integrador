@@ -18,33 +18,35 @@ Herda `may_memory/22-ENGENHARIA/DIRETRIZES-ENGENHARIA-SOFTWARE.md` (SOLID, Clean
                                │
             ┌──────────────────┼──────────────────┐
             ▼                  ▼                  ▼
-       PostgreSQL         Redis/Queue        Cofre de Certificados
-       (Supabase)                            (criptografado, isolado)
-            │                  │                  │
+       PostgreSQL         Redis/Queue        Cofre do Certificado
+       (Supabase)         (cache de tokens)  da Plataforma (único,
+            │                  │             e-CNPJ da Jota)
             └──────────────────┼──────────────────┘
                                ▼
                     ┌─────────────────────┐
-                    │  Serviço Integra      │
-                    │  Contador / SERPRO    │
+                    │  SerproAuthService +  │
+                    │  SerproClient         │
                     └──────────┬───────────┘
                                ▼
                     ┌─────────────────────┐
-                    │  APIs Governamentais  │
+                    │  Integra Contador /   │
+                    │  SERPRO (trial/prod)  │
                     └─────────────────────┘
 ```
 
-O frontend **nunca** fala diretamente com o SERPRO nem com o cofre de certificados — sempre via API Jota (NestJS).
+O frontend **nunca** fala diretamente com o SERPRO nem com o cofre de certificado — sempre via API Jota (NestJS). O certificado é **único na plataforma** (da Jota, não por empresa) — ver `docs/SEGURANCA.md §1`; o acesso por empresa é controlado por procuração eletrônica (`docs/SEGURANCA.md §2`), não por certificado.
 
 ## Hierarquia de entidades
 
 Nomenclatura de domínio em português (pastas, módulos, entidades, tabelas) — jargão técnico genérico (Controller, Service, DTO, hook) permanece em inglês, como convenção universal já usada até nos documentos de engenharia do vault.
 
 ```
-Plataforma (Jota) — nível topo
+Plataforma (Jota)
+   ├── CertificadoPlataforma (único, e-CNPJ da Jota — config de infra, não é entidade de domínio)
    └── Contador                        — "tenant" operacional
           └── Empresa (empresa cliente) — sub-tenant do contador
                  ├── Usuarios (usuários da empresa)
-                 ├── Certificados (cofre, 1:1 ou 1:N por empresa)
+                 ├── Procuracao (status ativa/expirada/revogada/pendente — autoriza consulta ao SERPRO)
                  ├── DocumentosFiscais (NF-e, NFC-e, CT-e, NFS-e, XML)
                  ├── RegistroDeCreditos (consumo/saldo de créditos)
                  ├── MensagensCaixaPostal (Caixa Postal)
@@ -60,7 +62,7 @@ Separar sempre:
 - **Presentation** — Controllers (NestJS) / Componentes de UI (React). Só recebem requisição, validam formato (DTO), chamam o Application e devolvem resposta. Zero regra de negócio aqui.
 - **Application** (Use Cases / Services) — orquestra regra de negócio: "importar NF-e", "consumir crédito e chamar SERPRO", "consultar situação fiscal".
 - **Domain** — entidades e regras invariantes do domínio fiscal (ex: como calcular saldo de crédito, o que torna uma empresa "regular"), sem depender de NestJS/Supabase/HTTP.
-- **Infrastructure** — acesso a Supabase, Redis, SERPRO, cofre de certificados, gateway de pagamento. Implementa interfaces definidas no Domain/Application (Dependency Inversion).
+- **Infrastructure** — acesso a Supabase, Redis, SERPRO, cofre do certificado da plataforma, gateway de pagamento. Implementa interfaces definidas no Domain/Application (Dependency Inversion).
 
 Nunca misturar regra tributária/fiscal com controller, rota ou query SQL solta.
 
@@ -75,7 +77,7 @@ else if (role === "contador") ...
 else if (role === "cliente") ...
 ```
 
-Usar RBAC + matriz de permissões (`recurso:acao`, ex: `empresa:visualizar`, `certificado:rotacionar`, `credito:ajustar`) resolvida por um serviço/policy de permissão (`ServicoDePermissoes`), coerente com `ARCHITECTURE_SECURITY_RULES 1.md §6-9` (RBAC+ABAC). O atributo ABAC mais importante aqui é **posse** (este contador é dono desta empresa? este usuário pertence a esta empresa?) — ver `docs/SEGURANCA.md §3`.
+Usar RBAC + matriz de permissões (`recurso:acao`, ex: `empresa:visualizar`, `procuracao:consultar`, `credito:ajustar`) resolvida por um serviço/policy de permissão (`ServicoDePermissoes`), coerente com `ARCHITECTURE_SECURITY_RULES 1.md §6-9` (RBAC+ABAC). O atributo ABAC mais importante aqui é **posse** (este contador é dono desta empresa? este usuário pertence a esta empresa?) — ver `docs/SEGURANCA.md §4`. Rotação do certificado da plataforma **não** entra nessa matriz — é operação de infraestrutura, restrita a `DEV_ADMIN` fora do fluxo normal de permissões de aplicação.
 
 Papéis mínimos: `DEV_ADMIN`, `CONTADOR`, `OPERADOR_CONTADOR` (funcionário do escritório contábil), `EMPRESARIO` (usuário da empresa cliente).
 
@@ -84,14 +86,14 @@ Papéis mínimos: `DEV_ADMIN`, `CONTADOR`, `OPERADOR_CONTADOR` (funcionário do 
 - Toda tabela de domínio: `id`, `empresa_id`, `contador_id` (direto ou via join em `empresas`), `criado_em`, `atualizado_em`.
 - Chaves estrangeiras e integridade referencial obrigatórias — nunca `empresa_id` solto sem FK para `empresas`.
 - Índices em `empresa_id`/`contador_id` desde o início (são o filtro de toda query do sistema).
-- RLS conforme `docs/SEGURANCA.md §3` — validar a cascata contador→empresa, não só um `tenant_id` plano.
+- RLS conforme `docs/SEGURANCA.md §4` — validar a cascata contador→empresa, não só um `tenant_id` plano.
 - Evitar N+1 ao montar dashboards (situação fiscal agregada de N empresas na carteira de um contador) — usar queries agregadas/views materializadas quando necessário.
 
 ## Tratamento de erros
 
 - Nunca deixar exceção da integração SERPRO vazar stack trace/payload cru para o cliente — capturar na camada de Infrastructure, traduzir para erro de domínio (`SerproIndisponivelError`, `CertificadoExpiradoError`) e daí para mensagem humana no Presentation.
 - Result Pattern ou exceções customizadas tipadas — nunca `catch` genérico que engole erro sem log.
-- Toda falha de integração externa (SERPRO fora do ar, cofre de certificado inacessível) deve isolar o impacto — não pode derrubar o restante da API.
+- Toda falha de integração externa (SERPRO fora do ar, cofre do certificado inacessível) deve isolar o impacto — não pode derrubar o restante da API.
 
 ## Limites de complexidade (herdado do vault)
 

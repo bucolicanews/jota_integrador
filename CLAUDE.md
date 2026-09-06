@@ -22,7 +22,7 @@ Um contador administra uma carteira de várias empresas-clientes; uma empresa-cl
 
 Ver plano de produto original: `may_memory/28-JotaIntegradorFiscal/primeiroPlano.md`.
 
-O dado mais crítico do sistema é o **certificado digital** (A1/A3) de cada empresa — permite assinar digitalmente em nome dela perante o Fisco. Trate-o com o nível de cuidado de uma chave privada de produção, não como um arquivo comum.
+O dado mais crítico do sistema é o **certificado digital e-CNPJ da própria Jota** — único na plataforma, usado para autenticar no SERPRO em nome de todos os clientes (`Role-Type: TERCEIROS`). Não é um certificado por empresa: o acesso aos dados de cada empresa cliente é liberado por **procuração eletrônica** que ela outorga à Jota. Perder esse certificado compromete o acesso a todos os clientes de uma vez — trate-o com o nível de cuidado de uma chave privada de produção de toda a plataforma, não como um arquivo comum. Ver `docs/SEGURANCA.md §1-2`.
 
 ---
 
@@ -67,8 +67,9 @@ A IA nunca deve, neste projeto:
 
 - Desativar RLS ou criar tabela sem política de tenant.
 - Deixar um contador acessar/listar empresa fora da própria carteira, ou uma empresa acessar dado de outra.
-- Expor certificado digital, chave privada, ou credencial SERPRO ao frontend/browser.
-- Armazenar certificado digital sem criptografia em repouso + cofre dedicado.
+- Expor o certificado digital da plataforma, chave privada, ou credencial SERPRO ao frontend/browser.
+- Armazenar o certificado digital sem criptografia em repouso + cofre dedicado.
+- Assumir que uma empresa tem procuração ativa sem checar antes de consultar o SERPRO.
 - Criar endpoint sem autenticação, autorização (RBAC+ABAC) e auditoria.
 - Usar `any` em DTO de entrada, SQL concatenado, ou `dangerouslySetInnerHTML` sem sanitização.
 - Decrementar crédito de uso sem transação atômica + registro de auditoria.

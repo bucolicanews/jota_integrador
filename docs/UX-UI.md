@@ -13,7 +13,7 @@ Herda integralmente `may_memory/26-DESIGNER/DIRETRIZES-UX-UI.md` (HCD/ISO 9241-2
   - "Tem documento fiscal novo?"
 - Dashboard com semáforo de status (🟢 Regular / 🟡 Atenção / 🔴 Pendência) como padrão visual único e consistente em toda a aplicação (heurística 4 de Nielsen — consistência).
 - Cada alerta gerado pelo motor de inteligência fiscal precisa vir com ação sugerida, não só o aviso (heurística 9 — ajudar a se recuperar do erro): "3 notas com NCM divergente → Revisar agora".
-- Onboarding do upload de certificado digital é um ponto de alta ansiedade (o usuário está entregando algo sensível) — usar feedback de status claro em cada etapa (heurística 1 — visibilidade do sistema): recebido → validado → armazenado com segurança → conectado ao SERPRO.
+- Onboarding de **procuração eletrônica** é um fluxo parcialmente externo (o empresário outorga via e-CAC/gov.br, fora do nosso app) e um ponto de alta ansiedade (está autorizando terceiro a acessar dados fiscais) — guiar passo a passo com feedback claro em cada etapa (heurística 1 — visibilidade do sistema): "outorgar no gov.br" (com link direto se possível) → "aguardando confirmação" → "procuração ativa, pronto pra consultar". Nunca deixar o usuário sem saber em qual dessas etapas está.
 
 ### JOTA CONTÁBIL (contador/escritório)
 
@@ -28,9 +28,10 @@ Herda integralmente `may_memory/26-DESIGNER/DIRETRIZES-UX-UI.md` (HCD/ISO 9241-2
 - Ações em lote (ex: reenviar alerta, revisar pendência) para não forçar o contador a repetir a mesma ação empresa por empresa — eficiência e flexibilidade (heurística 7).
 - Filtros persistentes (por status, por vencimento, por tipo de pendência) — reconhecimento em vez de memorização (heurística 6).
 
-## Certificado digital e créditos — cuidados de UX específicos
+## Procuração eletrônica e créditos — cuidados de UX específicos
 
-- Nunca pedir confirmação de ação irreversível sobre certificado (substituir/revogar) sem um passo de confirmação explícito e uma explicação do impacto (heurística 5 — prevenção de erros; controle e liberdade, heurística 3).
+- Procuração expirada/revogada não pode virar um erro genérico de API na tela do empresário — é um estado de negócio esperado, com mensagem específica ("Sua procuração venceu, renove no gov.br para continuar consultando") e ação clara, nunca "Erro ao processar solicitação".
+- Nunca deixar o contador achar que uma empresa está "sem pendência" só porque a consulta falhou silenciosamente por procuração vencida — distinguir visualmente "regular" de "não conseguimos verificar" (heurística 1 — visibilidade do sistema).
 - Saldo de créditos sempre visível para quem pode gastá-lo, com aviso antecipado de saldo baixo — nunca deixar uma operação falhar "de surpresa" por falta de crédito no meio do fluxo.
 - Seguir a recomendação do plano original: não expor o custo em créditos de cada operação individual de forma granular ao usuário final — comunicar como "operações fiscais incluídas no plano", mantendo a lógica de custo por operação apenas internamente.
 

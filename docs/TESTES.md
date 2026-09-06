@@ -10,12 +10,12 @@ Complementa `docs/ARQUITETURA.md` (testabilidade nasce da separação em camadas
 
 ## Fluxos E2E obrigatórios
 
-- Login e onboarding de contador → cadastro de empresa cliente → upload de certificado.
+- Login e onboarding de contador → cadastro de empresa cliente → verificação de procuração eletrônica ativa.
 - Consulta de situação fiscal de uma empresa (CNPJ, Simples Nacional) consumindo crédito corretamente.
 - Importação de NF-e/CT-e e exibição no módulo de documentos fiscais.
 - Consulta e leitura de mensagem na Caixa Postal, com atualização de status (lida/não lida).
 - Contador acessando o dashboard da carteira (múltiplas empresas agregadas).
-- Certificado expirando → alerta disparado para contador e empresário.
+- Certificado da plataforma expirando → alerta disparado para operação da Jota. Procuração de uma empresa expirando/revogada → alerta disparado para contador e empresário.
 
 ## Testes de segurança multi-tenant (obrigatórios, não opcionais)
 
@@ -28,17 +28,25 @@ Todo endpoint que recebe `empresa_id`/`contador_id` (via path, query ou body) pr
 
 Antes de merge para `main`/deploy: rodar o `PENTEST_CODE_REVIEW_PROTOCOL.md` do vault (`may_memory/21-SEGURANCA/`) com o formato de saída obrigatório dele (tabela de risco → detalhamento → patch → script de teste). Severidade Crítica (BOLA/IDOR entre contadores/empresas, RCE, SQLi) bloqueia o deploy.
 
-## Certificado digital e criptografia
+## Certificado digital e procuração
 
-- Testar que o certificado nunca aparece em texto puro em resposta de API, log, ou payload de fila — incluir asserção negativa (`expect(response.body).not.toContain(...)`) em testes de integração do módulo de certificados.
-- Testar rotação de certificado: versão antiga fica inacessível após substituição.
-- Testar alerta de expiração nos limiares definidos (30/15/7 dias).
+O certificado digital (e-CNPJ da própria Jota, único na plataforma — ver `docs/SEGURANCA.md §1`) não é mais um dado por empresa, então os testes mudam de foco:
+
+- Testar que o certificado nunca aparece em texto puro em resposta de API, log, ou payload de fila — incluir asserção negativa (`expect(response.body).not.toContain(...)`) no teste de integração do `SerproAuthService`.
+- Testar rotação do certificado da plataforma: versão antiga fica inacessível após substituição, sem downtime.
+- Testar alerta de expiração do certificado nos limiares definidos (60/30/15/7 dias) — é o pior cenário de indisponibilidade do sistema (ver `docs/SEGURANCA.md §1`), cobertura de teste deve ser alta aqui.
+- Testar bloqueio de chamada quando a **procuração** de uma empresa não está ativa — deve barrar antes de gastar crédito e antes de chamar o SERPRO (`docs/SEGURANCA.md §2`), com mensagem clara pro contador/empresário, não erro genérico.
 
 ## Integração com SERPRO
 
-- **Nunca** rodar suíte de testes automatizada contra o SERPRO de produção. Usar sandbox oficial do Integra Contador ou um mock/stub que simule as respostas (sucesso, erro, timeout, cota excedida).
+Confirmado (2026-09-06): o Integra Contador tem um **ambiente de demonstração/trial real e separado** da produção — não é preciso mock puro para a maior parte dos testes de integração:
+
+- **Trial:** `https://gateway.apiserpro.serpro.gov.br/integra-contador-trial/v1/` — usa CNPJ fixo `00000000000000` em `contratante`/`autorPedidoDados`/`contribuinte`, só `Authorization: Bearer <token de demonstração>` (sem certificado, sem `jwt_token`), cada serviço (`idSistema`/`idServico`) tem cenário documentado com payload e resposta esperada em `.../cenarios_trial/cenarios_<servico>/`. Usar essa URL (configurável via env, nunca hardcoded) como alvo dos testes de integração automatizados do `SerproClient` — cobre o "caminho feliz" de cada serviço real, sem custo e sem risco de dado de produção.
+- **Produção:** `https://gateway.apiserpro.serpro.gov.br/integra-contador/v1/` — **nunca** usada em testes automatizados/CI. Só em uso real (via certificado + procuração ativa de um cliente de verdade). Qualquer teste manual exploratório contra produção exige autorização explícita e nunca deve rodar em CI.
+- **Mock/stub** ainda é necessário para cenários que o trial não reproduz sob demanda: timeout, 500, cota excedida, 401 forçado (pra testar o retry de reautenticação do `SerproAuthService`). Usar mock nesses casos, trial nos demais.
 - Testar o comportamento do sistema quando o SERPRO está indisponível (timeout, 500, cota estourada) — deve degradar graciosamente, nunca vazar stack trace pro usuário nem travar consumo de crédito de forma inconsistente (ver próximo item).
 - Testar explicitamente que "chamada ao SERPRO falhou" e "crédito debitado" nunca ficam dessincronizados (a atomicidade exigida em `docs/SEGURANCA.md §5` precisa de teste que force a falha no meio da operação).
+- Testar que uma resposta do **trial** nunca é confundida com dado real em nenhum ambiente que não seja teste — o CNPJ fixo `00000000000000` não deve poder aparecer associado a uma empresa real no banco.
 
 ## Sistema de créditos
 
