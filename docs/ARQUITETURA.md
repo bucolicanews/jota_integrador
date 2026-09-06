@@ -37,19 +37,21 @@ O frontend **nunca** fala diretamente com o SERPRO nem com o cofre de certificad
 
 ## Hierarquia de entidades
 
+Nomenclatura de domínio em português (pastas, módulos, entidades, tabelas) — jargão técnico genérico (Controller, Service, DTO, hook) permanece em inglês, como convenção universal já usada até nos documentos de engenharia do vault.
+
 ```
-Tenant (Jota) — nível plataforma
-   └── Accountant (Contador)         — "tenant" operacional
-          └── Company (Empresa Cliente) — sub-tenant do contador
-                 ├── Users (usuários da empresa)
-                 ├── Certificates (cofre, 1:1 ou 1:N por empresa)
-                 ├── FiscalDocuments (NF-e, NFC-e, CT-e, NFS-e, XML)
-                 ├── CreditLedger (consumo/saldo de créditos)
-                 ├── MailboxMessages (Caixa Postal)
-                 └── AuditLog
+Plataforma (Jota) — nível topo
+   └── Contador                        — "tenant" operacional
+          └── Empresa (empresa cliente) — sub-tenant do contador
+                 ├── Usuarios (usuários da empresa)
+                 ├── Certificados (cofre, 1:1 ou 1:N por empresa)
+                 ├── DocumentosFiscais (NF-e, NFC-e, CT-e, NFS-e, XML)
+                 ├── RegistroDeCreditos (consumo/saldo de créditos)
+                 ├── MensagensCaixaPostal (Caixa Postal)
+                 └── LogAuditoria
 ```
 
-Regra fundamental: nenhum registro de domínio existe sem `company_id`, e nenhuma `company` existe sem `accountant_id` (exceto operação feita pelo Dev Admin, que é auditada como tal, nunca como "sem tenant").
+Regra fundamental: nenhum registro de domínio existe sem `empresa_id`, e nenhuma `empresa` existe sem `contador_id` (exceto operação feita pelo Dev Admin, que é auditada como tal, nunca como "sem tenant").
 
 ## Camadas (Clean Architecture)
 
@@ -73,15 +75,15 @@ else if (role === "contador") ...
 else if (role === "cliente") ...
 ```
 
-Usar RBAC + matriz de permissões (`resource:action`, ex: `empresa:view`, `certificado:rotate`, `credito:ajustar`) resolvida por um `PermissionService`/policy, coerente com `ARCHITECTURE_SECURITY_RULES 1.md §6-9` (RBAC+ABAC). O atributo ABAC mais importante aqui é **posse** (este contador é dono desta empresa? este usuário pertence a esta empresa?) — ver `docs/SEGURANCA.md §3`.
+Usar RBAC + matriz de permissões (`recurso:acao`, ex: `empresa:visualizar`, `certificado:rotacionar`, `credito:ajustar`) resolvida por um serviço/policy de permissão (`ServicoDePermissoes`), coerente com `ARCHITECTURE_SECURITY_RULES 1.md §6-9` (RBAC+ABAC). O atributo ABAC mais importante aqui é **posse** (este contador é dono desta empresa? este usuário pertence a esta empresa?) — ver `docs/SEGURANCA.md §3`.
 
 Papéis mínimos: `DEV_ADMIN`, `CONTADOR`, `OPERADOR_CONTADOR` (funcionário do escritório contábil), `EMPRESARIO` (usuário da empresa cliente).
 
 ## Banco de dados
 
-- Toda tabela de domínio: `id`, `company_id`, `accountant_id` (direto ou via join em `companies`), `created_at`, `updated_at`.
-- Chaves estrangeiras e integridade referencial obrigatórias — nunca `company_id` solto sem FK para `companies`.
-- Índices em `company_id`/`accountant_id` desde o início (são o filtro de toda query do sistema).
+- Toda tabela de domínio: `id`, `empresa_id`, `contador_id` (direto ou via join em `empresas`), `criado_em`, `atualizado_em`.
+- Chaves estrangeiras e integridade referencial obrigatórias — nunca `empresa_id` solto sem FK para `empresas`.
+- Índices em `empresa_id`/`contador_id` desde o início (são o filtro de toda query do sistema).
 - RLS conforme `docs/SEGURANCA.md §3` — validar a cascata contador→empresa, não só um `tenant_id` plano.
 - Evitar N+1 ao montar dashboards (situação fiscal agregada de N empresas na carteira de um contador) — usar queries agregadas/views materializadas quando necessário.
 

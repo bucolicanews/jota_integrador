@@ -23,7 +23,7 @@ Cliente → Upload do certificado → Criptografia (AES-256) → Cofre dedicado
         → Serviço de autenticação isolado → SERPRO / Integra Contador
 ```
 
-- Nunca persistir o certificado como arquivo comum em disco, bucket público ou coluna sem criptografia. Usar um serviço/tabela dedicado, isolado do restante do domínio (`certificates` não pode ser uma tabela genérica de "uploads").
+- Nunca persistir o certificado como arquivo comum em disco, bucket público ou coluna sem criptografia. Usar um serviço/tabela dedicado, isolado do restante do domínio (`certificados` não pode ser uma tabela genérica de "uploads").
 - Criptografia em repouso obrigatória (AES-256); a chave de criptografia do cofre vive em Secret Manager, nunca no banco junto com o dado cifrado.
 - **Nunca** expor o certificado, sua senha, ou material derivado (chave privada extraída) ao frontend — nem em resposta de API, nem em log, nem em painel administrativo.
 - Isolamento por empresa: o certificado de uma empresa nunca é acessível por outra, nem por um contador que não seja o responsável por ela (ver §3 — hierarquia de acesso).
@@ -44,11 +44,11 @@ Cliente → Upload do certificado → Criptografia (AES-256) → Cofre dedicado
 
 Este é o ponto de maior risco de BOLA/IDOR do sistema — mais crítico que um multi-tenant de 2 níveis comum, porque existem **dois** limites de posse a validar em cascata.
 
-- Toda tabela de domínio (empresas, documentos fiscais, certificados, créditos, consultas) possui `accountant_id` (contador) **e** `company_id` (empresa), nunca apenas um dos dois.
-- Toda query deve derivar `accountant_id`/`company_id` da sessão autenticada (JWT → usuário → contador/empresa vinculados), **nunca** aceitar esses IDs vindos do payload/query param da requisição sem revalidar posse.
+- Toda tabela de domínio (empresas, documentos fiscais, certificados, créditos, consultas) possui `contador_id` (contador) **e** `empresa_id` (empresa), nunca apenas um dos dois.
+- Toda query deve derivar `contador_id`/`empresa_id` da sessão autenticada (JWT → usuário → contador/empresa vinculados), **nunca** aceitar esses IDs vindos do payload/query param da requisição sem revalidar posse.
 - Um contador só pode listar/acessar empresas da própria carteira — validar isso no service, não confiar em filtro feito só no frontend.
 - Uma empresa-cliente (usuário empresário) só acessa os próprios dados — nunca os de outra empresa, mesmo do mesmo contador.
-- RLS no Supabase deve expressar essa cascata (política que verifica `company_id` pertence a uma empresa cujo `accountant_id` = contador da sessão, e/ou `company_id` = empresa do usuário logado), não apenas RLS de tenant único.
+- RLS no Supabase deve expressar essa cascata (política que verifica `empresa_id` pertence a uma empresa cujo `contador_id` = contador da sessão, e/ou `empresa_id` = empresa do usuário logado), não apenas RLS de tenant único.
 - Dev/Admin da Jota tem visão global — mas todo acesso desse nível também gera auditoria (é o papel com maior poder de dano, não uma exceção às regras).
 - Antes de qualquer deploy: rodar o `PENTEST_CODE_REVIEW_PROTOCOL.md` do vault com foco explícito em "contador A acessa empresa de contador B" e "empresa A acessa dado de empresa B" como cenários de teste obrigatórios.
 
@@ -68,7 +68,7 @@ Seguindo a classificação de `ARCHITECTURE_SECURITY_RULES 2.md §Classificaçã
 
 ## 5. Sistema de créditos e billing
 
-- Consumo de crédito (`CONSULTA_CNPJ`, `PGDAS`, `DOWNLOAD_XML`, etc.) e a chamada que ele paga devem ser atômicos — nunca decrementar crédito e falhar a operação (ou vice-versa) sem compensação. Usar transação de banco ou padrão saga/outbox, não duas escritas independentes.
+- Consumo de crédito (`CONSULTA_CNPJ`, `PGDAS`, `BAIXAR_XML`, etc.) e a chamada que ele paga devem ser atômicos — nunca decrementar crédito e falhar a operação (ou vice-versa) sem compensação. Usar transação de banco ou padrão saga/outbox, não duas escritas independentes.
 - Toda alteração de saldo de crédito gera registro de auditoria imutável (quem, quanto, motivo, saldo antes/depois) — é dado financeiro.
 - Proteger contra fraude de consumo: um usuário não pode disparar a mesma operação em paralelo para "gastar" créditos que não tem (race condition em decremento) — lock otimista/pessimista ou constraint de saldo não-negativo no banco.
 - Dados de pagamento (se houver cobrança direta): nunca armazenar cartão/CVV — usar tokenização via gateway (Stripe/PagBank/Mercado Pago/Asaas), conforme `SECURITY SYSTEM DESIGN.md §24`.
@@ -82,7 +82,7 @@ Aplicar integralmente, sem adaptação adicional, tudo que já está em `POLITIC
 A IA nunca deve, no contexto do jota_integrador:
 
 - Gerar ou sugerir certificado/chave/credencial real, nem mesmo como exemplo — usar sempre `[MASKED]` ou dado fictício claramente identificável como tal.
-- Desativar RLS, ignorar `accountant_id`/`company_id`, ou "simplificar temporariamente" a checagem de hierarquia contador→empresa para destravar uma feature.
+- Desativar RLS, ignorar `contador_id`/`empresa_id`, ou "simplificar temporariamente" a checagem de hierarquia contador→empresa para destravar uma feature.
 - Escrever código que envie certificado digital, sua senha, ou credencial SERPRO para o frontend, log, fila ou terceiro não autorizado.
 - Rodar ou sugerir rodar teste/script contra o SERPRO de produção.
 - Tratar o módulo de créditos/billing como "detalhe menor" — é dado financeiro e auditável como qualquer pagamento.

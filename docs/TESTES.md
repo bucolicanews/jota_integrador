@@ -19,7 +19,7 @@ Complementa `docs/ARQUITETURA.md` (testabilidade nasce da separação em camadas
 
 ## Testes de segurança multi-tenant (obrigatórios, não opcionais)
 
-Todo endpoint que recebe `company_id`/`accountant_id` (via path, query ou body) precisa de teste automatizado que prove o isolamento, não apenas revisão manual:
+Todo endpoint que recebe `empresa_id`/`contador_id` (via path, query ou body) precisa de teste automatizado que prove o isolamento, não apenas revisão manual:
 
 - Contador A autenticado tentando acessar/listar/alterar empresa que pertence ao Contador B → deve falhar (403/404), nunca vazar dado.
 - Usuário empresário da Empresa X tentando acessar dado da Empresa Y (mesmo contador ou não) → deve falhar.

@@ -1,4 +1,10 @@
-# jota_integrador — JOTA FISCAL
+# jota_integrador — JOTA FISCAL (backend)
+
+Este repositório é o **backend** (NestJS/API) do JOTA FISCAL. O frontend (React + Vite) vive em repositório separado: [`jota_fiscal_frontend`](https://github.com/bucolicanews/jota_fiscal_frontend) (`C:\Users\jotac\OneDrive\Documents\DEV\jota_fiscal_frontend`), que consulta os docs deste repo (`docs/`) para segurança/arquitetura/testes/UX-UI em vez de duplicá-los.
+
+## Nomenclatura
+
+Todo nome de domínio (módulos, entidades, tabelas, variáveis de negócio) é em **português**: `contadores`, `empresas`, `documentos-fiscais`, `RegistroDeCreditos`. Jargão técnico universal (Controller, Service, DTO, guard, tenant/multi-tenant) permanece em inglês — mesma convenção já usada nos documentos de engenharia do vault.
 
 ## Sobre o projeto
 
@@ -76,3 +82,12 @@ A IA nunca deve, neste projeto:
 - [docs/ARQUITETURA.md](docs/ARQUITETURA.md) — modelo de dados, camadas, padrões de código
 - [docs/TESTES.md](docs/TESTES.md) — estratégia e obrigatoriedade de testes
 - [docs/UX-UI.md](docs/UX-UI.md) — diretrizes de design aplicadas aos dois perfis (empresário/contador)
+
+## Repositórios do projeto
+
+| Repositório | Papel | Local |
+|---|---|---|
+| `jota_integrador` (este) | Backend — NestJS/API | `DEV/jota_integrador` |
+| `jota_fiscal_frontend` | Frontend — React + Vite | `DEV/jota_fiscal_frontend` |
+
+Sem git submodule entre eles (ao contrário do DeliveryHub) — repositórios independentes, comunicação só via API HTTP, para evitar os problemas de sincronização (`.env`, `node_modules`, hash de commit divergente) já documentados na memória do DeliveryHub.

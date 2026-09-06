@@ -1,6 +1,8 @@
-# JOTA FISCAL
+# JOTA FISCAL — Backend
 
-Plataforma SaaS de gestão e inteligência fiscal da Jota Contabilidade/Jota Empresas. Centraliza informações fiscais de empresas conectando-se às APIs oficiais do governo (**Integra Contador / SERPRO**), sem expor essa complexidade ao cliente final.
+Backend/API (NestJS) da plataforma JOTA FISCAL — SaaS de gestão e inteligência fiscal da Jota Contabilidade/Jota Empresas. Centraliza informações fiscais de empresas conectando-se às APIs oficiais do governo (**Integra Contador / SERPRO**), sem expor essa complexidade ao cliente final.
+
+Frontend em repositório separado: [`jota_fiscal_frontend`](https://github.com/bucolicanews/jota_fiscal_frontend).
 
 Dois produtos sobre a mesma base:
 
