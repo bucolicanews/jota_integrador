@@ -22,7 +22,7 @@ Um contador administra uma carteira de várias empresas-clientes; uma empresa-cl
 
 Ver plano de produto original: `may_memory/28-JotaIntegradorFiscal/primeiroPlano.md`.
 
-O dado mais crítico do sistema é o **certificado digital e-CNPJ da própria Jota** — único na plataforma, usado para autenticar no SERPRO em nome de todos os clientes (`Role-Type: TERCEIROS`). Não é um certificado por empresa: o acesso aos dados de cada empresa cliente é liberado por **procuração eletrônica** que ela outorga à Jota. Perder esse certificado compromete o acesso a todos os clientes de uma vez — trate-o com o nível de cuidado de uma chave privada de produção de toda a plataforma, não como um arquivo comum. Ver `docs/SEGURANCA.md §1-2`.
+Cada empresa acessa o SERPRO por um de dois modos (ver `docs/SEGURANCA.md §1-2`): **Modo A** — procuração eletrônica outorgada à Jota, usando o certificado e-CNPJ único da própria Jota (`Role-Type: TERCEIROS`) para autenticar em nome de todos os clientes nesse modo; **Modo B** — certificado digital próprio, cadastrado individualmente por aquela empresa. O certificado da Jota (Modo A) é o dado mais crítico do sistema — perdê-lo compromete o acesso a todos os clientes desse modo de uma vez, não só um. Cada certificado individual (Modo B) tem o cuidado de sempre: nunca um arquivo comum, sempre cofre isolado por empresa.
 
 ---
 
@@ -67,9 +67,9 @@ A IA nunca deve, neste projeto:
 
 - Desativar RLS ou criar tabela sem política de tenant.
 - Deixar um contador acessar/listar empresa fora da própria carteira, ou uma empresa acessar dado de outra.
-- Expor o certificado digital da plataforma, chave privada, ou credencial SERPRO ao frontend/browser.
-- Armazenar o certificado digital sem criptografia em repouso + cofre dedicado.
-- Assumir que uma empresa tem procuração ativa sem checar antes de consultar o SERPRO.
+- Expor qualquer certificado digital (da plataforma ou de empresa), chave privada, ou credencial SERPRO ao frontend/browser.
+- Armazenar qualquer certificado digital sem criptografia em repouso + cofre dedicado.
+- Assumir que toda empresa usa o mesmo modo de acesso ao SERPRO, ou pular a checagem de procuração (Modo A)/certificado válido (Modo B) antes de consultar.
 - Criar endpoint sem autenticação, autorização (RBAC+ABAC) e auditoria.
 - Usar `any` em DTO de entrada, SQL concatenado, ou `dangerouslySetInnerHTML` sem sanitização.
 - Decrementar crédito de uso sem transação atômica + registro de auditoria.

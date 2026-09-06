@@ -12,39 +12,47 @@ Em caso de dúvida ou conflito, a precedência é: `POLITICAS` → `ARCHITECTURE
 
 ---
 
-## 1. Certificado Digital da Jota — o dado mais crítico do sistema (single point of failure)
+## 1. Certificados digitais — dois modos de acesso ao SERPRO, ambos suportados
 
-Confirmado com a documentação oficial do Integra Contador (2026-09-06): a autenticação no SERPRO usa `Role-Type: TERCEIROS` e exige **o certificado digital e-CNPJ da própria Jota** (o mesmo usado na contratação do produto junto ao SERPRO) — **não** um certificado por empresa-cliente. O acesso aos dados de cada empresa é liberado por **procuração eletrônica** que a empresa outorga à Jota (via e-CAC/gov.br), não por um certificado que a empresa nos entrega.
+A plataforma suporta **dois modos de acesso** ao SERPRO por empresa cliente, não um só — cada empresa usa um dos dois (`modo_acesso_serpro`: `procuracao` | `certificado_proprio`):
 
-Isso muda o formato do risco: em vez de N certificados isolados (um por empresa, comprometer um afeta uma empresa), há **um único certificado cuja perda compromete o acesso a todos os clientes da plataforma simultaneamente**. Tratar como o ativo de segurança mais crítico do sistema inteiro — mais do que qualquer dado individual de cliente.
+**Modo A — Procuração (via certificado único da Jota):** confirmado com a documentação oficial do Integra Contador (2026-09-06) — autenticação usa `Role-Type: TERCEIROS` com **o certificado e-CNPJ da própria Jota** (o mesmo usado na contratação do produto junto ao SERPRO). A empresa outorga procuração eletrônica à Jota (via e-CAC/gov.br) autorizando a consulta; não entrega certificado nenhum. Ver §2.
 
-**Obrigatório:**
+**Modo B — Certificado próprio da empresa:** a empresa cadastra e mantém seu próprio certificado digital (A1/A3) no cofre da plataforma, individual por empresa — modelo original do plano de produto, para empresas que preferem não outorgar procuração ou que já têm certificado próprio configurado para outros fins. **Mecânica exata de autenticação nesse modo junto ao SERPRO (se ainda passa pelo `contratante` Jota ou se a empresa precisa de contrato próprio com o SERPRO) ainda precisa ser confirmada com a documentação/suporte SERPRO antes de implementar** — não assumir, validar.
+
+Isso significa **dois ativos críticos coexistindo**, com riscos de naturezas diferentes:
+- O certificado da Jota (Modo A) é um single point of failure: comprometê-lo afeta todos os clientes que usam procuração simultaneamente.
+- Cada certificado individual (Modo B) tem blast radius menor (uma empresa), mas são N certificados a proteger, não um.
+
+**Obrigatório para os dois modos:**
 
 ```
-Certificado e-CNPJ da Jota → Criptografia (AES-256) → Cofre dedicado, acesso mínimo
+Certificado (Jota, único — ou empresa, individual) → Criptografia (AES-256) → Cofre dedicado, acesso mínimo
         → Serviço de autenticação isolado (SerproAuthService) → SERPRO / Integra Contador
 ```
 
-- Certificado único, não uma tabela `certificados` genérica — é configuração de infraestrutura crítica da plataforma, não um registro de domínio por empresa. Acesso de leitura restrito ao serviço de autenticação SERPRO; nenhum outro módulo do sistema toca nele.
-- Criptografia em repouso obrigatória (AES-256); a chave de criptografia do cofre vive em Secret Manager, nunca junto com o dado cifrado.
-- **Nunca** expor o certificado, sua senha, ou material derivado ao frontend — nem em resposta de API, nem em log, nem em painel administrativo, nem para o Dev Admin via UI (acesso só por operação de infraestrutura, fora da aplicação).
-- Controle de expiração: alertar a operação da Jota com bastante antecedência (ex: 60/30/15/7 dias) — se esse certificado vencer, **toda a plataforma** para de conseguir consultar qualquer cliente. É o pior cenário de indisponibilidade do sistema, não uma falha isolada.
-- Toda chamada de autenticação ao SERPRO (uso do certificado) gera registro de auditoria: quando, resultado, IP de origem — mesmo sendo uso interno/automático.
-- Rotação: suportar substituição sem downtime da plataforma inteira.
+- O certificado da Jota (Modo A) não é uma tabela `certificados` genérica — é configuração de infraestrutura crítica da plataforma. Os certificados de empresas (Modo B) sim ficam numa tabela de domínio (`certificados`, com `empresa_id`), isolada do restante do domínio (não é uma tabela genérica de "uploads").
+- Isolamento por empresa no Modo B: o certificado de uma empresa nunca é acessível por outra, nem por um contador que não seja o responsável por ela (ver §4 — hierarquia de acesso).
+- Criptografia em repouso obrigatória (AES-256) nos dois modos; a chave de criptografia do cofre vive em Secret Manager, nunca junto com o dado cifrado.
+- **Nunca** expor certificado (de qualquer modo), sua senha, ou material derivado ao frontend — nem em resposta de API, nem em log, nem em painel administrativo.
+- Controle de expiração nos dois modos: Modo A alerta a operação da Jota (60/30/15/7 dias — vencer aqui derruba a plataforma inteira pra quem usa procuração); Modo B alerta contador e empresário daquela empresa específica.
+- Toda operação que **use** um certificado (autenticação junto ao SERPRO) gera registro de auditoria: quando, para qual empresa (se Modo B) ou uso da plataforma (se Modo A), resultado — mesmo uso automático/agendado.
+- Rotação suportada nos dois modos sem downtime, sem deixar versão antiga acessível após a troca.
 - Certificado nunca sai do cofre em texto puro para logs, mensagens de erro, filas (Redis) ou webhooks.
 
-## 2. Procuração eletrônica por empresa — o mecanismo real de isolamento
+## 2. Procuração eletrônica por empresa (Modo A) — mecanismo de isolamento desse modo
 
-Como o certificado é único (da Jota), **quem autoriza ou não o acesso a uma empresa é a procuração eletrônica**, não algo que o nosso sistema emite. A Jota não pode consultar `contribuinte` nenhum sem procuração ativa outorgada por aquela empresa.
+Para empresas no Modo A, **quem autoriza ou não o acesso é a procuração eletrônica**, não algo que o nosso sistema emite. A Jota não pode consultar `contribuinte` nenhum sem procuração ativa outorgada por aquela empresa.
 
-- Nunca assumir que uma empresa cadastrada no nosso banco tem procuração válida — rastrear o status explicitamente (`ativa`/`expirada`/`revogada`/`pendente`) e revalidar periodicamente (o SERPRO expõe um serviço `PROCURACOES` para consulta programática — usar isso em vez de confiar num campo que nunca é atualizado).
-- Bloquear no nosso próprio backend qualquer chamada pra uma empresa sem procuração ativa **antes** de gastar crédito ou fazer a chamada ao SERPRO — não depender só do SERPRO rejeitar a chamada (defesa em profundidade + evita cobrar crédito de uma chamada que ia falhar de qualquer forma).
+- Nunca assumir que uma empresa em Modo A tem procuração válida — rastrear o status explicitamente (`ativa`/`expirada`/`revogada`/`pendente`) e revalidar periodicamente (o SERPRO expõe um serviço `PROCURACOES` para consulta programática — usar isso em vez de confiar num campo que nunca é atualizado).
+- Bloquear no nosso próprio backend qualquer chamada pra uma empresa em Modo A sem procuração ativa **antes** de gastar crédito ou fazer a chamada ao SERPRO — não depender só do SERPRO rejeitar a chamada (defesa em profundidade + evita cobrar crédito de uma chamada que ia falhar de qualquer forma).
 - Expiração/revogação de procuração é um evento de negócio de primeira classe: alertar contador e empresário, não deixar consultas falharem silenciosamente com erro genérico.
-- Toda mudança de status de procuração gera auditoria (é o que efetivamente liga/desliga acesso a dados fiscais de uma empresa).
+- Toda mudança de status de procuração gera auditoria (é o que efetivamente liga/desliga acesso a dados fiscais de uma empresa em Modo A).
+- Empresas em Modo B (certificado próprio) não passam por essa checagem de procuração — passam pela checagem equivalente de "certificado presente e não expirado" (§1).
 
 ## 3. Integração com SERPRO / Integra Contador — fluxo técnico confirmado
 
-Autenticação (`SerproAuthService`, camada Infrastructure):
+Autenticação (`SerproAuthService`, camada Infrastructure) — fluxo abaixo confirmado para o **Modo A (procuração)**; Modo B (certificado próprio da empresa) usa o mesmo desenho de serviço mas ainda precisa ter a mecânica exata de autenticação junto ao SERPRO confirmada (§1) antes de implementar:
 
 - `POST https://autenticacao.sapi.serpro.gov.br/authenticate` com `Authorization: Basic base64(consumer_key:consumer_secret)`, header `Role-Type: TERCEIROS`, e o certificado da Jota (mTLS) — nunca sem os três.
 - Resposta traz **dois tokens** (`access_token` + `jwt_token`, ~33min de validade) — guardar os dois juntos em cache (Redis), nunca só um.
@@ -102,5 +110,6 @@ A IA nunca deve, no contexto do jota_integrador_backend:
 - Desativar RLS, ignorar `contador_id`/`empresa_id`, ou "simplificar temporariamente" a checagem de hierarquia contador→empresa para destravar uma feature.
 - Escrever código que envie certificado digital, sua senha, ou credencial SERPRO para o frontend, log, fila ou terceiro não autorizado.
 - Rodar ou sugerir rodar teste/script contra o gateway de **produção** do SERPRO (`integra-contador`, sem `-trial`) — usar sempre o ambiente `integra-contador-trial` em desenvolvimento/CI (ver `docs/TESTES.md`).
-- Assumir que uma empresa tem procuração ativa sem checar — nunca implementar chamada ao SERPRO pra um `contribuinte` sem antes validar status de procuração.
+- Assumir que uma empresa em Modo A tem procuração ativa sem checar, ou que uma empresa em Modo B tem certificado válido sem checar — nunca implementar chamada ao SERPRO pra um `contribuinte` sem validar antes o mecanismo de acesso correspondente ao modo daquela empresa.
+- Assumir que todas as empresas usam o mesmo modo de acesso (procuração **ou** certificado próprio) — os dois coexistem, verificar `modo_acesso_serpro` da empresa antes de decidir qual fluxo de autenticação usar.
 - Tratar o módulo de créditos/billing como "detalhe menor" — é dado financeiro e auditável como qualquer pagamento.

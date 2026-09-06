@@ -18,9 +18,10 @@ Herda `may_memory/22-ENGENHARIA/DIRETRIZES-ENGENHARIA-SOFTWARE.md` (SOLID, Clean
                                │
             ┌──────────────────┼──────────────────┐
             ▼                  ▼                  ▼
-       PostgreSQL         Redis/Queue        Cofre do Certificado
-       (Supabase)         (cache de tokens)  da Plataforma (único,
-            │                  │             e-CNPJ da Jota)
+       PostgreSQL         Redis/Queue        Cofres de Certificado
+       (Supabase)         (cache de tokens)  (Plataforma: único, e-CNPJ
+            │                  │             da Jota — Empresa: 0..1 por
+            │                  │             empresa em Modo B)
             └──────────────────┼──────────────────┘
                                ▼
                     ┌─────────────────────┐
@@ -34,7 +35,7 @@ Herda `may_memory/22-ENGENHARIA/DIRETRIZES-ENGENHARIA-SOFTWARE.md` (SOLID, Clean
                     └─────────────────────┘
 ```
 
-O frontend **nunca** fala diretamente com o SERPRO nem com o cofre de certificado — sempre via API Jota (NestJS). O certificado é **único na plataforma** (da Jota, não por empresa) — ver `docs/SEGURANCA.md §1`; o acesso por empresa é controlado por procuração eletrônica (`docs/SEGURANCA.md §2`), não por certificado.
+O frontend **nunca** fala diretamente com o SERPRO nem com nenhum cofre de certificado — sempre via API Jota (NestJS). Dois modos coexistem por empresa (`docs/SEGURANCA.md §1`): **Modo A** usa o certificado único da plataforma (Jota) + procuração eletrônica outorgada pela empresa (`§2`); **Modo B** usa um certificado próprio cadastrado por aquela empresa específica.
 
 ## Hierarquia de entidades
 
@@ -42,11 +43,13 @@ Nomenclatura de domínio em português (pastas, módulos, entidades, tabelas) �
 
 ```
 Plataforma (Jota)
-   ├── CertificadoPlataforma (único, e-CNPJ da Jota — config de infra, não é entidade de domínio)
+   ├── CertificadoPlataforma (único, e-CNPJ da Jota — usado no Modo A, config de infra)
    └── Contador                        — "tenant" operacional
           └── Empresa (empresa cliente) — sub-tenant do contador
                  ├── Usuarios (usuários da empresa)
-                 ├── Procuracao (status ativa/expirada/revogada/pendente — autoriza consulta ao SERPRO)
+                 ├── modo_acesso_serpro ("procuracao" | "certificado_proprio")
+                 ├── Procuracao (Modo A — status ativa/expirada/revogada/pendente)
+                 ├── Certificado (Modo B — 0..1 por empresa, cofre isolado)
                  ├── DocumentosFiscais (NF-e, NFC-e, CT-e, NFS-e, XML)
                  ├── RegistroDeCreditos (consumo/saldo de créditos)
                  ├── MensagensCaixaPostal (Caixa Postal)

@@ -10,7 +10,7 @@ Complementa `docs/ARQUITETURA.md` (testabilidade nasce da separação em camadas
 
 ## Fluxos E2E obrigatórios
 
-- Login e onboarding de contador → cadastro de empresa cliente → verificação de procuração eletrônica ativa.
+- Login e onboarding de contador → cadastro de empresa cliente → configuração do modo de acesso ao SERPRO (procuração eletrônica **ou** upload de certificado próprio, ver `docs/SEGURANCA.md §1`).
 - Consulta de situação fiscal de uma empresa (CNPJ, Simples Nacional) consumindo crédito corretamente.
 - Importação de NF-e/CT-e e exibição no módulo de documentos fiscais.
 - Consulta e leitura de mensagem na Caixa Postal, com atualização de status (lida/não lida).
@@ -28,14 +28,15 @@ Todo endpoint que recebe `empresa_id`/`contador_id` (via path, query ou body) pr
 
 Antes de merge para `main`/deploy: rodar o `PENTEST_CODE_REVIEW_PROTOCOL.md` do vault (`may_memory/21-SEGURANCA/`) com o formato de saída obrigatório dele (tabela de risco → detalhamento → patch → script de teste). Severidade Crítica (BOLA/IDOR entre contadores/empresas, RCE, SQLi) bloqueia o deploy.
 
-## Certificado digital e procuração
+## Certificado digital e procuração (dois modos)
 
-O certificado digital (e-CNPJ da própria Jota, único na plataforma — ver `docs/SEGURANCA.md §1`) não é mais um dado por empresa, então os testes mudam de foco:
+Testar os dois modos de acesso separadamente (`docs/SEGURANCA.md §1`), nunca assumir que só um existe:
 
-- Testar que o certificado nunca aparece em texto puro em resposta de API, log, ou payload de fila — incluir asserção negativa (`expect(response.body).not.toContain(...)`) no teste de integração do `SerproAuthService`.
-- Testar rotação do certificado da plataforma: versão antiga fica inacessível após substituição, sem downtime.
-- Testar alerta de expiração do certificado nos limiares definidos (60/30/15/7 dias) — é o pior cenário de indisponibilidade do sistema (ver `docs/SEGURANCA.md §1`), cobertura de teste deve ser alta aqui.
-- Testar bloqueio de chamada quando a **procuração** de uma empresa não está ativa — deve barrar antes de gastar crédito e antes de chamar o SERPRO (`docs/SEGURANCA.md §2`), com mensagem clara pro contador/empresário, não erro genérico.
+- Testar que nenhum certificado (plataforma ou de empresa) aparece em texto puro em resposta de API, log, ou payload de fila — incluir asserção negativa (`expect(response.body).not.toContain(...)`) no teste de integração do `SerproAuthService`.
+- Testar rotação de certificado nos dois modos: versão antiga fica inacessível após substituição, sem downtime.
+- Testar alerta de expiração: certificado da plataforma (Modo A, 60/30/15/7 dias — pior cenário, derruba acesso de todo mundo em Modo A) e certificado de empresa (Modo B, mesmos limiares, mas afeta só aquela empresa).
+- Testar bloqueio de chamada quando a **procuração** de uma empresa em Modo A não está ativa, e quando o **certificado** de uma empresa em Modo B está ausente/expirado — os dois casos devem barrar antes de gastar crédito e antes de chamar o SERPRO (`docs/SEGURANCA.md §2`), com mensagem clara pro contador/empresário, não erro genérico.
+- Testar que uma empresa em Modo B nunca acidentalmente tenta usar o certificado da plataforma (ou vice-versa) — o `SerproAuthService` deve escolher o fluxo certo a partir de `modo_acesso_serpro`, com teste que cobre os dois ramos.
 
 ## Integração com SERPRO
 

@@ -13,7 +13,7 @@ Herda integralmente `may_memory/26-DESIGNER/DIRETRIZES-UX-UI.md` (HCD/ISO 9241-2
   - "Tem documento fiscal novo?"
 - Dashboard com semáforo de status (🟢 Regular / 🟡 Atenção / 🔴 Pendência) como padrão visual único e consistente em toda a aplicação (heurística 4 de Nielsen — consistência).
 - Cada alerta gerado pelo motor de inteligência fiscal precisa vir com ação sugerida, não só o aviso (heurística 9 — ajudar a se recuperar do erro): "3 notas com NCM divergente → Revisar agora".
-- Onboarding de **procuração eletrônica** é um fluxo parcialmente externo (o empresário outorga via e-CAC/gov.br, fora do nosso app) e um ponto de alta ansiedade (está autorizando terceiro a acessar dados fiscais) — guiar passo a passo com feedback claro em cada etapa (heurística 1 — visibilidade do sistema): "outorgar no gov.br" (com link direto se possível) → "aguardando confirmação" → "procuração ativa, pronto pra consultar". Nunca deixar o usuário sem saber em qual dessas etapas está.
+- Onboarding de acesso ao SERPRO tem dois caminhos possíveis (deixar claro qual a empresa está seguindo, não misturar UI dos dois): **procuração eletrônica** (fluxo parcialmente externo — o empresário outorga via e-CAC/gov.br — guiar passo a passo: "outorgar no gov.br" com link direto se possível → "aguardando confirmação" → "procuração ativa") ou **upload de certificado próprio** (fluxo interno, com feedback claro: recebido → validado → armazenado com segurança). Os dois são pontos de alta ansiedade (o usuário está autorizando acesso a dados fiscais sensíveis) — nunca deixar o usuário sem saber em qual etapa está (heurística 1 — visibilidade do sistema).
 
 ### JOTA CONTÁBIL (contador/escritório)
 

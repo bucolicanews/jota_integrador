@@ -45,7 +45,7 @@ Este projeto herda as políticas de segurança, engenharia e design do ecossiste
 
 ## Ponto de maior cuidado
 
-O dado mais crítico do sistema é o **certificado digital e-CNPJ da própria Jota** — único na plataforma, não um certificado por empresa cliente. O acesso a cada empresa é liberado por procuração eletrônica, não por certificado próprio dela. Nunca versionar, nunca expor ao frontend, sempre em cofre criptografado isolado. Ver `docs/SEGURANCA.md §1-2`.
+Cada empresa acessa o SERPRO por procuração eletrônica (usando o certificado único da Jota) ou por certificado digital próprio — dois modos coexistindo, não um só. Nunca versionar nenhum certificado, nunca expor ao frontend, sempre em cofre criptografado isolado. Ver `docs/SEGURANCA.md §1-2`.
 
 ## Status
 
