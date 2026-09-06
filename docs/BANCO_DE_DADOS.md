@@ -14,7 +14,7 @@ PostgreSQL via Supabase. Complementa `docs/ARQUITETURA.md` (camadas, hierarquia 
 ## 1. Identidade e hierarquia
 
 ### `contadores`
-`id, nome, cnpj_cpf, email, telefone, tipo` (`humano`|`interno_jota`), `status, bloqueado, bloqueado_em, bloqueado_motivo, bloqueado_por` (FK `usuarios`), `criado_em, atualizado_em`
+`id, nome, cnpj_cpf, email, telefone, tipo` (`humano`|`interno_jota`), `status, bloqueado, bloqueado_em, bloqueado_motivo, bloqueado_por` (FK `usuarios`), `stripe_customer_id` (assinatura SaaS, §3), `stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted` (Connect/honorários, §7), `criado_em, atualizado_em`
 
 ### `empresas`
 `id, contador_id` (FK **not null**), `razao_social, nome_fantasia, cnpj, regime_tributario, modo_acesso_serpro` (`procuracao`|`certificado_proprio`), `status, bloqueado, bloqueado_em, bloqueado_motivo, bloqueado_por` (FK `usuarios`), `criado_em, atualizado_em`
@@ -58,13 +58,15 @@ Certificado da própria Jota (usado no Modo A) **não é uma linha aqui** — vi
 
 ---
 
-## 3. Financeiro e créditos (carteira do contador)
+## 3. Assinatura SaaS — contador paga a Jota (créditos SERPRO)
+
+Sem Stripe Connect aqui — a Jota é a única recebedora, é cobrança direta (Stripe Checkout + Subscriptions, conta única da plataforma). Confirmado (2026-09-06): webhook é real, não lançamento manual — mesmo padrão do Stripe Connect do DeliveryHub (webhook assinado, confia direto).
 
 ### `planos`
 `id, nome, operacoes_incluidas, preco, periodicidade, ativo`
 
 ### `assinaturas`
-`id, contador_id` (FK), `plano_id` (FK), `status` (`ativa`|`cancelada`|`inadimplente`), `inicio_em, fim_em, renovacao_automatica`
+`id, contador_id` (FK), `plano_id` (FK), `stripe_subscription_id`, `status` (`ativa`|`cancelada`|`inadimplente`), `inicio_em, fim_em, renovacao_automatica`
 
 ### `creditos_saldo`
 `contador_id` (FK, PK), `saldo_atual, atualizado_em` — cache mutável do saldo corrente
@@ -73,12 +75,12 @@ Certificado da própria Jota (usado no Modo A) **não é uma linha aqui** — vi
 `id, contador_id` (FK), `empresa_id` (FK — qual empresa gerou o consumo, para rastreabilidade mesmo o saldo sendo do contador), `tipo_operacao, quantidade, saldo_antes, saldo_depois, motivo, criado_em` — **imutável**, ledger de auditoria (`docs/SEGURANCA.md §6`)
 
 ### `faturas`
-`id, contador_id` (FK), `assinatura_id` (FK), `valor, competencia, vencimento, status` (`pendente`|`paga`|`atrasada`|`cancelada`), `pago_em, criado_em`
+`id, contador_id` (FK), `assinatura_id` (FK), `stripe_invoice_id`, `valor, competencia, vencimento, status` (`pendente`|`paga`|`atrasada`|`cancelada`), `pago_em, criado_em`
 
-### `pagamentos`
-`id, fatura_id` (FK), `gateway` (Stripe|PagBank|MercadoPago|Asaas), `gateway_transacao_id, valor, metodo` (pix|cartao|boleto), `status, criado_em` — nunca cartão/CVV em claro, só referência tokenizada do gateway
+### `webhook_eventos_processados`
+`id, gateway` (Stripe, e futuros), `evento_id, processado_em` — idempotência genérica: todo handler de webhook checa aqui antes de aplicar efeito (crédito, mudança de status), evita duplicar em retry do gateway. Compartilhada entre este módulo e o de honorários (§7).
 
-**Pendente de confirmação:** se `pagamentos` recebe webhook real de gateway (cobrança processada por este sistema) ou se é preenchido manualmente pelo admin (Jota já fatura por fora) — não decidido ainda, afeta se precisamos de `webhook signature validation` aqui (`docs/SEGURANCA.md §3`, regra geral de webhook já existe, só falta confirmar se se aplica a este módulo).
+`STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` da plataforma ficam em `.env`/Secret Manager — **nunca em tabela**, ao contrário do padrão usado no DeliveryHub/GESTAO_PROJETOS_VUE (`configuracoes_pagamentos` em banco) — aqui seguimos a política mais estrita já adotada neste projeto (`docs/SEGURANCA.md`, `ADR-002`: segredo nunca no banco).
 
 ---
 
@@ -113,6 +115,26 @@ Toda ação de bloqueio/desbloqueio (`contadores`, `empresas`, `usuarios`) gera 
 
 ---
 
+## 7. Honorários — empresa paga o contador, Jota comissiona (Stripe Connect)
+
+Sistema **separado** do §3 — aqui o dinheiro é da empresa para o contador (pagamento de honorários contábeis), a Jota só intermedia e fica com comissão. Replica o padrão já validado em produção no DeliveryHub (Stripe Connect, contas Express, destination charge + `application_fee_amount`) — ver `[[project_deliveryhub]]` na memória para o histórico de implementação (onboarding, gotchas de conta de teste, etc.).
+
+### Onboarding (campos em `contadores`, não tabela nova)
+`stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted` — sincronizados via webhook `account.updated` (assinado, confia direto). Contador clica "Conectar com Stripe" → backend cria conta Express (`accounts.create`) + link de onboarding hospedado (`accountLinks.create`) — mesmo fluxo do `/restaurante/config` do DeliveryHub.
+
+### `cobrancas_honorarios`
+`id, contador_id` (FK), `empresa_id` (FK), `descricao, valor, comissao_pct, comissao_valor, stripe_payment_intent_id, status` (`pendente`|`pago`|`falhou`|`estornado`), `criado_em, atualizado_em, pago_em`
+
+PaymentIntent criado como **destination charge**: `amount` = `valor`, `transfer_data.destination` = `contadores.stripe_account_id`, `application_fee_amount` = `comissao_valor` — dinheiro vive na conta da plataforma até o split, comissão retida automaticamente (mesmo mecanismo do DeliveryHub, `comissao_pct`/`comissao_padrao_pct`).
+
+**Isolamento obrigatório:** toda `cobranca_honorario` valida que `empresa_id` pertence à carteira do `contador_id` que está cobrando — nunca permitir contador cobrar (mesmo via conta conectada própria) uma empresa que não é cliente dele (mesma regra de posse de `docs/SEGURANCA.md §4`, aplicada a um novo tipo de recurso).
+
+**Gating de disponibilidade:** empresa só vê opção de pagar honorário via cartão se `contadores.stripe_charges_enabled = true` (mesmo padrão do campo `stripe_disponivel` do catálogo público no DeliveryHub) — nunca mostrar opção de pagamento que não vai processar nada.
+
+Webhooks: `payment_intent.succeeded`, `payment_intent.payment_failed`, `account.updated` — todos assinados, verificar `stripe-signature` e checar `webhook_eventos_processados` (§3) antes de aplicar efeito.
+
+---
+
 ## Papéis do catálogo fixo (v1)
 
 | Papel | Escopo | Uso típico |
@@ -132,5 +154,6 @@ Catálogo fixo por decisão explícita (2026-09-06) — evoluir para papéis cus
 ## Pendências em aberto
 
 - Mecânica exata de autenticação do Modo B (certificado próprio) junto ao SERPRO — não confirmada, não implementar sem validar antes (`docs/SEGURANCA.md §1`).
-- `pagamentos`: webhook de gateway real vs. lançamento manual pelo admin — a confirmar.
+- ~~`pagamentos`: webhook real vs. manual~~ — **resolvido (2026-09-06):** webhook real, mesmo padrão do Connect do DeliveryHub (assinado, confia direto).
 - `documentos_fiscais_itens` (granularidade de NCM/CFOP por produto) — adiado pra Fase 2.
+- `comissao_pct` de honorários (§7): definido por contador, por plano, ou fixo global da Jota? Não decidido ainda — precisa de uma tela/config de onde esse percentual vem antes de implementar `cobrancas_honorarios`.

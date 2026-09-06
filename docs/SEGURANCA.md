@@ -97,12 +97,25 @@ Seguindo a classificação de `ARCHITECTURE_SECURITY_RULES 2.md §Classificaçã
 - Toda alteração de saldo de crédito gera registro de auditoria imutável (quem, quanto, motivo, saldo antes/depois) — é dado financeiro.
 - Proteger contra fraude de consumo: um usuário não pode disparar a mesma operação em paralelo para "gastar" créditos que não tem (race condition em decremento) — lock otimista/pessimista ou constraint de saldo não-negativo no banco.
 - Dados de pagamento (se houver cobrança direta): nunca armazenar cartão/CVV — usar tokenização via gateway (Stripe/PagBank/Mercado Pago/Asaas), conforme `SECURITY SYSTEM DESIGN.md §24`.
+- Assinatura SaaS (contador → Jota) usa Stripe Checkout + Subscriptions direto, sem Connect — Jota é a única recebedora (`docs/BANCO_DE_DADOS.md §3`).
 
-## 7. Regras herdadas do vault que se aplicam sem alteração
+## 7. Stripe Connect — honorários (empresa paga o contador, Jota comissiona)
+
+Réplica do padrão já em produção no DeliveryHub (Stripe Connect, contas Express, destination charge) — ver `docs/BANCO_DE_DADOS.md §7` para o schema. Aqui, quem recebe **não é a Jota**, é o contador (via conta conectada) — muda o modelo de confiança:
+
+- `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` da plataforma: `.env`/Secret Manager, **nunca em tabela** — desvio deliberado do padrão usado no DeliveryHub/GESTAO_PROJETOS_VUE (que guardam em `configuracoes_pagamentos`/`/admin/configuracoes` no banco); aqui seguimos a regra mais estrita já vigente neste projeto (`ADR-002-POLITICA-CREDENCIAIS`: segredo nunca no banco).
+- `stripe_account_id` de um contador não é segredo (é usado no lado cliente do Stripe.js em alguns fluxos) — mas `stripe_charges_enabled`/`payouts_enabled`/`details_submitted` só devem ser atualizados via webhook assinado (`account.updated`), nunca por escrita direta de endpoint que o frontend chama.
+- **Isolamento obrigatório antes de criar qualquer PaymentIntent:** validar que `empresa_id` pertence à carteira do `contador_id` que está cobrando — nunca aceitar essa combinação vinda do payload sem revalidar posse (mesma regra de `docs/SEGURANCA.md §4`, aplicada a um recurso financeiro novo). Cobrar honorário de empresa fora da carteira do contador é tão grave quanto vazar dado fiscal entre carteiras.
+- `application_fee_amount` (comissão da Jota) é calculado no backend a partir de `comissao_pct`, nunca aceito do frontend — cliente jamais decide quanto a plataforma cobra de comissão.
+- Webhooks (`payment_intent.succeeded`, `payment_intent.payment_failed`, `account.updated`) são assinados pelo Stripe — verificar `stripe-signature` sempre, e checar `webhook_eventos_processados` antes de aplicar qualquer efeito (idempotência — retry do gateway não pode creditar/pagar duas vezes).
+- Nunca mostrar ao empresário uma opção de pagamento por cartão se `contadores.stripe_charges_enabled = false` — gating no backend (endpoint que expõe métodos de pagamento disponíveis), não só no frontend.
+- Estorno/chargeback: quem assume o risco (Stripe vs. plataforma) é definido no "platform profile" do dashboard Stripe da Jota, decisão de negócio/jurídica do usuário — não é algo que a IA decide ou assume implicitamente no código.
+
+## 8. Regras herdadas do vault que se aplicam sem alteração
 
 Aplicar integralmente, sem adaptação adicional, tudo que já está em `POLITICAS.md` e `ARCHITECTURE_SECURITY_RULES 1/2.md`: RLS em 100% das tabelas, RBAC+ABAC, MFA obrigatório para ADMIN/SUPER_ADMIN (aqui: Dev Admin e Contador com poderes administrativos sobre a carteira), Argon2/bcrypt para senha, JWT curto + refresh rotativo, helmet/CORS restrito/CSRF, rate limiting, headers de segurança, validação de upload (MIME+assinatura binária+antivírus), webhook signature/timestamp/nonce, backups diários com teste de restauração, observabilidade (Sentry/OpenTelemetry/Prometheus/Grafana/Loki), pipeline DevSecOps (lint→testes→SAST→dependency scan→secret scan) bloqueando deploy em falha crítica.
 
-## 8. Regra absoluta para IA neste projeto
+## 9. Regra absoluta para IA neste projeto
 
 A IA nunca deve, no contexto do jota_integrador_backend:
 
@@ -113,3 +126,6 @@ A IA nunca deve, no contexto do jota_integrador_backend:
 - Assumir que uma empresa em Modo A tem procuração ativa sem checar, ou que uma empresa em Modo B tem certificado válido sem checar — nunca implementar chamada ao SERPRO pra um `contribuinte` sem validar antes o mecanismo de acesso correspondente ao modo daquela empresa.
 - Assumir que todas as empresas usam o mesmo modo de acesso (procuração **ou** certificado próprio) — os dois coexistem, verificar `modo_acesso_serpro` da empresa antes de decidir qual fluxo de autenticação usar.
 - Tratar o módulo de créditos/billing como "detalhe menor" — é dado financeiro e auditável como qualquer pagamento.
+- Criar PaymentIntent de honorário (§7) sem validar antes que a empresa pertence à carteira do contador que está cobrando.
+- Aceitar `application_fee_amount`/percentual de comissão vindo do frontend — sempre calculado no backend.
+- Guardar `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` em tabela do banco — só `.env`/Secret Manager, mesmo que o padrão de outro projeto do ecossistema faça diferente.
