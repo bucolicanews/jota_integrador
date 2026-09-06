@@ -38,6 +38,7 @@ E o vault Obsidian `may_memory` (`C:\Users\jotac\OneDrive\Documents\DEV\may_memo
 - Qualquer tarefa de **UX/UI/design** → `docs/UX-UI.md` deste projeto (que herda de `may_memory/26-DESIGNER/DIRETRIZES-UX-UI.md`).
 - Qualquer trabalho de **arquitetura/engenharia** (services, controllers, permissões, DDD) → `docs/ARQUITETURA.md` (que herda de `may_memory/22-ENGENHARIA/DIRETRIZES-ENGENHARIA-SOFTWARE.md`).
 - Qualquer implementação de **testes** → `docs/TESTES.md`.
+- Qualquer trabalho de **schema/tabelas/migration** → `docs/BANCO_DE_DADOS.md`.
 
 Se uma memória ou documento do vault citar um arquivo/função específico, confirme que ainda existe antes de agir sobre ela — memórias são fotografias no tempo, não estado ao vivo.
 
@@ -80,7 +81,8 @@ A IA nunca deve, neste projeto:
 ## Documentos deste projeto
 
 - [docs/SEGURANCA.md](docs/SEGURANCA.md) — política de segurança específica do JOTA FISCAL
-- [docs/ARQUITETURA.md](docs/ARQUITETURA.md) — modelo de dados, camadas, padrões de código
+- [docs/ARQUITETURA.md](docs/ARQUITETURA.md) — camadas, permissões, padrões de código
+- [docs/BANCO_DE_DADOS.md](docs/BANCO_DE_DADOS.md) — schema completo das tabelas
 - [docs/TESTES.md](docs/TESTES.md) — estratégia e obrigatoriedade de testes
 - [docs/UX-UI.md](docs/UX-UI.md) — diretrizes de design aplicadas aos dois perfis (empresário/contador)
 

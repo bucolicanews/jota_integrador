@@ -82,7 +82,7 @@ else if (role === "cliente") ...
 
 Usar RBAC + matriz de permissões (`recurso:acao`, ex: `empresa:visualizar`, `procuracao:consultar`, `credito:ajustar`) resolvida por um serviço/policy de permissão (`ServicoDePermissoes`), coerente com `ARCHITECTURE_SECURITY_RULES 1.md §6-9` (RBAC+ABAC). O atributo ABAC mais importante aqui é **posse** (este contador é dono desta empresa? este usuário pertence a esta empresa?) — ver `docs/SEGURANCA.md §4`. Rotação do certificado da plataforma **não** entra nessa matriz — é operação de infraestrutura, restrita a `DEV_ADMIN` fora do fluxo normal de permissões de aplicação.
 
-Papéis mínimos: `DEV_ADMIN`, `CONTADOR`, `OPERADOR_CONTADOR` (funcionário do escritório contábil), `EMPRESARIO` (usuário da empresa cliente).
+Papéis vêm de um catálogo fixo em tabela (`papeis`/`permissoes`/`papel_permissoes`, não enum hardcoded) — permite cadastrar funcionários com níveis de acesso diferentes tanto do lado da Jota quanto de cada empresa cliente. Catálogo completo e regras de escopo em `docs/BANCO_DE_DADOS.md §1` e `§Papéis do catálogo fixo`.
 
 ## Banco de dados
 

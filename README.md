@@ -38,8 +38,9 @@ Antes de implementar qualquer coisa, ler nesta ordem:
 1. [`CLAUDE.md`](CLAUDE.md) — visão geral e regras invioláveis
 2. [`docs/SEGURANCA.md`](docs/SEGURANCA.md) — política de segurança (certificado digital da plataforma, procuração eletrônica, SERPRO, isolamento contador/empresa, créditos)
 3. [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) — camadas, modelo de dados, permissões
-4. [`docs/TESTES.md`](docs/TESTES.md) — estratégia e obrigatoriedade de testes
-5. [`docs/UX-UI.md`](docs/UX-UI.md) — diretrizes de design para os dois perfis
+4. [`docs/BANCO_DE_DADOS.md`](docs/BANCO_DE_DADOS.md) — schema completo das tabelas
+5. [`docs/TESTES.md`](docs/TESTES.md) — estratégia e obrigatoriedade de testes
+6. [`docs/UX-UI.md`](docs/UX-UI.md) — diretrizes de design para os dois perfis
 
 Este projeto herda as políticas de segurança, engenharia e design do ecossistema JHON (vault `may_memory`) — os documentos acima linkam de volta para lá.
 
