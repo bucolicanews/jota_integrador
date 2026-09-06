@@ -2,6 +2,8 @@
 
 PostgreSQL via Supabase. Complementa `docs/ARQUITETURA.md` (camadas, hierarquia de entidades) e `docs/SEGURANCA.md` (RLS, classificação de dados, isolamento). Nomes de tabela/coluna em português, `snake_case` (convenção SQL padrão, não é jargão técnico a manter em inglês).
 
+**Migrations SQL implementadas** em `supabase/migrations/` (2026-09-06), uma por área, nesta ordem: `0001_extensoes_e_funcoes_auth` (helpers de RLS lendo `app_metadata`) → `0002_identidade_hierarquia` (RBAC, contadores, empresas, usuarios) → `0003_acesso_serpro` → `0004_assinatura_saas` → `0005_fiscal` → `0006_caixa_postal` → `0007_auditoria` → `0008_honorarios_stripe_connect`. Autenticação via **Supabase Auth** (não custom JWT) — `usuarios` é tabela de perfil, sem `senha_hash`/`refresh_tokens` próprios; RLS lê `contador_id`/`empresa_id`/`papel` de `auth.jwt() -> 'app_metadata'` (sincronizado pelo backend via Admin API), nunca por subquery direta em `usuarios` (evita recursão de RLS).
+
 ## Convenções gerais
 
 - Toda tabela: `id uuid`, `criado_em timestamptz`, `atualizado_em timestamptz`.
