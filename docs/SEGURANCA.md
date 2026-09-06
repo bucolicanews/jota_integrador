@@ -116,6 +116,8 @@ Réplica do padrão já em produção no DeliveryHub (Stripe Connect, contas Exp
 
 Aplicar integralmente, sem adaptação adicional, tudo que já está em `POLITICAS.md` e `ARCHITECTURE_SECURITY_RULES 1/2.md`: RLS em 100% das tabelas, RBAC+ABAC, MFA obrigatório para ADMIN/SUPER_ADMIN (aqui: Dev Admin e Contador com poderes administrativos sobre a carteira), Argon2/bcrypt para senha, JWT curto + refresh rotativo, helmet/CORS restrito/CSRF, rate limiting, headers de segurança, validação de upload (MIME+assinatura binária+antivírus), webhook signature/timestamp/nonce, backups diários com teste de restauração, observabilidade (Sentry/OpenTelemetry/Prometheus/Grafana/Loki), pipeline DevSecOps (lint→testes→SAST→dependency scan→secret scan) bloqueando deploy em falha crítica.
 
+**Nota de implementação (login via Supabase Auth, 2026-09-06):** como decidido, o frontend autentica direto no Supabase Auth (`supabase-js`), não via NestJS — o rate limit de login ("5 tentativas por minuto") mora em `supabase/config.toml` (`[auth.rate_limit] sign_in_sign_ups`), não em `@nestjs/throttler`. O NestJS só valida o JWT resultante (`SupabaseAuthGuard`) e aplica rate limiting próprio nos endpoints que ele de fato expõe (criar usuário, bloquear, etc.).
+
 ## 9. Regra absoluta para IA neste projeto
 
 A IA nunca deve, no contexto do jota_integrador_backend:

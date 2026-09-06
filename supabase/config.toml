@@ -206,7 +206,10 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# 25/5min (~5/min) por politica do projeto (docs/SEGURANCA.md: Login = 5 tentativas por minuto).
+# Login nao passa pelo NestJS (frontend fala direto com Supabase Auth), entao o rate
+# limit tem que estar aqui, nao em @nestjs/throttler.
+sign_in_sign_ups = 25
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
 token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.

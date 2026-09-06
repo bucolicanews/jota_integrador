@@ -1,0 +1,39 @@
+import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
+import { AppModule } from './app.module';
+
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService);
+
+  app.use(helmet());
+
+  // Nunca CORS aberto em produção (docs/SEGURANCA.md) -- allowlist explícita via env.
+  const origensPermitidas = config
+    .getOrThrow<string>('APP_ALLOWED_ORIGINS')
+    .split(',')
+    .map((origem) => origem.trim())
+    .filter(Boolean);
+
+  app.enableCors({
+    origin: origensPermitidas,
+    credentials: true,
+  });
+
+  // whitelist+forbidNonWhitelisted: qualquer campo fora do DTO é rejeitado, não
+  // silenciosamente ignorado -- fecha a porta de mass assignment na entrada da API.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  const porta = config.get<string>('PORT') ?? '3002';
+  await app.listen(porta);
+}
+
+bootstrap();

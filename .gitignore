@@ -55,3 +55,4 @@ Thumbs.db
 .eslintcache
 .turbo/
 .cache/
+*.tsbuildinfo
