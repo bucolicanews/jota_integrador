@@ -7,6 +7,7 @@ import { SupabaseModule } from './common/supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { ContadoresModule } from './contadores/contadores.module';
+import { SerproModule } from './serpro/serpro.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ContadoresModule } from './contadores/contadores.module';
     AuthModule,
     EmpresasModule,
     ContadoresModule,
+    SerproModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
