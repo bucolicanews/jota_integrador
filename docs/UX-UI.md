@@ -1,4 +1,4 @@
-# UX/UI — jota_integrador (JOTA FISCAL / JOTA CONTÁBIL)
+# UX/UI — jota_integrador_backend (JOTA FISCAL / JOTA CONTÁBIL)
 
 Herda integralmente `may_memory/26-DESIGNER/DIRETRIZES-UX-UI.md` (HCD/ISO 9241-210, usabilidade ISO 9241-11, 5 Planos de Garrett, heurísticas de Nielsen, acessibilidade WCAG, Lean UX). Antes de considerar qualquer tela "pronta", rodar o checklist completo desse documento. Aqui só entram as adaptações específicas dos dois perfis deste produto.
 

@@ -1,4 +1,4 @@
-# Estratégia de Testes — jota_integrador (JOTA FISCAL)
+# Estratégia de Testes — jota_integrador_backend (JOTA FISCAL)
 
 Complementa `docs/ARQUITETURA.md` (testabilidade nasce da separação em camadas) e `docs/SEGURANCA.md` (o pentest/code review do vault é parte obrigatória do fluxo de release, não um extra).
 

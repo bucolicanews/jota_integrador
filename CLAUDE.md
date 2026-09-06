@@ -1,6 +1,6 @@
-# jota_integrador — JOTA FISCAL (backend)
+# jota_integrador_backend — JOTA FISCAL (backend)
 
-Este repositório é o **backend** (NestJS/API) do JOTA FISCAL. O frontend (React + Vite) vive em repositório separado: [`jota_fiscal_frontend`](https://github.com/bucolicanews/jota_fiscal_frontend) (`C:\Users\jotac\OneDrive\Documents\DEV\jota_fiscal_frontend`), que consulta os docs deste repo (`docs/`) para segurança/arquitetura/testes/UX-UI em vez de duplicá-los.
+Este repositório (GitHub: `jota_integrador_backend`, pasta local ainda chamada `jota_integrador` por questão de sincronização do OneDrive) é o **backend** (NestJS/API) do JOTA FISCAL. O frontend (React + Vite) vive em repositório separado: [`jota_integrador_frontend`](https://github.com/bucolicanews/jota_integrador_frontend) (`C:\Users\jotac\OneDrive\Documents\DEV\jota_fiscal_frontend`, mesma ressalva de nome de pasta local), que consulta os docs deste repo (`docs/`) para segurança/arquitetura/testes/UX-UI em vez de duplicá-los.
 
 ## Nomenclatura
 
@@ -85,9 +85,11 @@ A IA nunca deve, neste projeto:
 
 ## Repositórios do projeto
 
-| Repositório | Papel | Local |
+| Repositório (GitHub) | Papel | Pasta local |
 |---|---|---|
-| `jota_integrador` (este) | Backend — NestJS/API | `DEV/jota_integrador` |
-| `jota_fiscal_frontend` | Frontend — React + Vite | `DEV/jota_fiscal_frontend` |
+| `jota_integrador_backend` (este) | Backend — NestJS/API | `DEV/jota_integrador` |
+| `jota_integrador_frontend` | Frontend — React + Vite | `DEV/jota_fiscal_frontend` |
+
+Nomes de pasta local ficaram defasados em relação ao nome do repo no GitHub (renomeado depois de criado, OneDrive bloqueou o rename local) — não afeta o funcionamento, só cuidado ao procurar a pasta pelo nome do repo.
 
 Sem git submodule entre eles (ao contrário do DeliveryHub) — repositórios independentes, comunicação só via API HTTP, para evitar os problemas de sincronização (`.env`, `node_modules`, hash de commit divergente) já documentados na memória do DeliveryHub.

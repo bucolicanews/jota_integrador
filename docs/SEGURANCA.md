@@ -1,4 +1,4 @@
-# Política de Segurança — jota_integrador (JOTA FISCAL)
+# Política de Segurança — jota_integrador_backend (JOTA FISCAL)
 
 Este documento **herda integralmente** as políticas do ecossistema JHON:
 
@@ -79,7 +79,7 @@ Aplicar integralmente, sem adaptação adicional, tudo que já está em `POLITIC
 
 ## 7. Regra absoluta para IA neste projeto
 
-A IA nunca deve, no contexto do jota_integrador:
+A IA nunca deve, no contexto do jota_integrador_backend:
 
 - Gerar ou sugerir certificado/chave/credencial real, nem mesmo como exemplo — usar sempre `[MASKED]` ou dado fictício claramente identificável como tal.
 - Desativar RLS, ignorar `contador_id`/`empresa_id`, ou "simplificar temporariamente" a checagem de hierarquia contador→empresa para destravar uma feature.

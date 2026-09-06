@@ -1,4 +1,4 @@
-# Arquitetura — jota_integrador (JOTA FISCAL)
+# Arquitetura — jota_integrador_backend (JOTA FISCAL)
 
 Herda `may_memory/22-ENGENHARIA/DIRETRIZES-ENGENHARIA-SOFTWARE.md` (SOLID, Clean Architecture, complexidade ciclomática) e `may_memory/21-SEGURANCA/ARCHITECTURE_SECURITY_RULES 1.md` (multi-tenant, RBAC/ABAC). Este documento aplica esses princípios genéricos à forma específica deste projeto.
 
