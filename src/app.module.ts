@@ -6,6 +6,7 @@ import { validate } from './common/config/env.validation';
 import { SupabaseModule } from './common/supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { EmpresasModule } from './empresas/empresas.module';
+import { ContadoresModule } from './contadores/contadores.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EmpresasModule } from './empresas/empresas.module';
     SupabaseModule,
     AuthModule,
     EmpresasModule,
+    ContadoresModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
