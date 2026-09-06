@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { EmpresasModule } from '../empresas/empresas.module';
 import { AtualizarPapelUsuarioUseCase } from './aplicacao/casos-de-uso/atualizar-papel-usuario.usecase';
 import { BloquearUsuarioUseCase } from './aplicacao/casos-de-uso/bloquear-usuario.usecase';
 import { CriarUsuarioUseCase } from './aplicacao/casos-de-uso/criar-usuario.usecase';
@@ -13,13 +14,14 @@ import { SupabaseAuthGuard } from './apresentacao/guards/supabase-auth.guard';
 import { ProvedorIdentidadeSupabase } from './infraestrutura/provedor-identidade.supabase';
 import { UsuariosRepositorioSupabase } from './infraestrutura/usuarios.repositorio.supabase';
 
-// @Global(): SupabaseAuthGuard/PapeisGuard vão proteger rotas de outros módulos
-// (empresas, certificados, etc. -- ainda não existem, mas vão existir). Sem @Global(),
-// cada módulo novo precisaria importar AuthModule explicitamente, e esquecer um só
-// quebra a resolução de DI em runtime (mesmo gotcha já documentado no DeliveryHub para
-// guard/interceptor compartilhado -- ver [[project_deliveryhub]] na memória).
+// @Global(): SupabaseAuthGuard/PapeisGuard protegem rotas de outros módulos (empresas/
+// já usa; certificados, créditos, etc. vão usar). Sem @Global(), cada módulo novo
+// precisaria importar AuthModule explicitamente, e esquecer um só quebra a resolução de
+// DI em runtime (mesmo gotcha já documentado no DeliveryHub para guard/interceptor
+// compartilhado -- ver [[project_deliveryhub]] na memória).
 @Global()
 @Module({
+  imports: [EmpresasModule], // EMPRESAS_REPOSITORIO -- checagem de posse em CriarUsuario
   controllers: [AuthController],
   providers: [
     { provide: USUARIOS_REPOSITORIO, useClass: UsuariosRepositorioSupabase },

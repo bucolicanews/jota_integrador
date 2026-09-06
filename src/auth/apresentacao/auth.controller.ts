@@ -3,12 +3,17 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import {
+  EMPRESAS_REPOSITORIO,
+  EmpresasRepositorioPort,
+} from '../../empresas/aplicacao/portas/empresas-repositorio.port';
 import { ESCOPO_POR_PAPEL, Papel } from '../dominio/papel';
 import { AtualizarPapelUsuarioUseCase } from '../aplicacao/casos-de-uso/atualizar-papel-usuario.usecase';
 import { BloquearUsuarioUseCase } from '../aplicacao/casos-de-uso/bloquear-usuario.usecase';
@@ -36,6 +41,7 @@ export class AuthController {
     private readonly desbloquearUsuario: DesbloquearUsuarioUseCase,
     private readonly obterPerfil: ObterPerfilUseCase,
     private readonly logoutGlobal: LogoutGlobalUseCase,
+    @Inject(EMPRESAS_REPOSITORIO) private readonly empresasRepositorio: EmpresasRepositorioPort,
   ) {}
 
   @Get('me')
@@ -55,7 +61,12 @@ export class AuthController {
     @Body() dto: CriarUsuarioDto,
     @UsuarioAtual() usuarioAtual: UsuarioAutenticado,
   ): Promise<Usuario> {
-    const vinculo = this.resolverVinculoPermitido(usuarioAtual, dto.papel, dto.contadorId ?? null, dto.empresaId ?? null);
+    const vinculo = await this.resolverVinculoPermitido(
+      usuarioAtual,
+      dto.papel,
+      dto.contadorId ?? null,
+      dto.empresaId ?? null,
+    );
 
     return this.criarUsuario.executar({
       nome: dto.nome,
@@ -111,17 +122,17 @@ export class AuthController {
   /**
    * Restringe o vínculo (contadorId/empresaId) ao que o usuário atual tem autoridade
    * de criar -- nunca confia no que veio no DTO pra quem não é plataforma (Zero Trust).
-   * LIMITAÇÃO CONHECIDA (v1): um CONTADOR_DONO só pode criar usuário de escopo `contador`
-   * (pra dentro do próprio escritório) -- criar EMPRESARIO_DONO/OPERADOR_EMPRESA pra uma
-   * empresa da carteira exige checar posse da empresa, que depende do módulo `empresas/`
-   * (ainda não implementado). Só a plataforma pode fazer isso por enquanto.
+   * Um CONTADOR_DONO pode criar tanto usuário de escopo `contador` (pro próprio
+   * escritório) quanto `empresa` (pra uma empresa da própria carteira, checado via
+   * EmpresasRepositorioPort -- resolve a limitação v1 documentada no commit anterior,
+   * agora que o módulo `empresas/` existe).
    */
-  private resolverVinculoPermitido(
+  private async resolverVinculoPermitido(
     usuarioAtual: UsuarioAutenticado,
     papelNovo: Papel,
     contadorIdSolicitado: string | null,
     empresaIdSolicitado: string | null,
-  ): { contadorId: string | null; empresaId: string | null } {
+  ): Promise<{ contadorId: string | null; empresaId: string | null }> {
     if (usuarioAtual.papel === Papel.SUPER_ADMIN) {
       return { contadorId: contadorIdSolicitado, empresaId: empresaIdSolicitado };
     }
@@ -131,6 +142,21 @@ export class AuthController {
     if (usuarioAtual.papel === Papel.CONTADOR_DONO && escopoNovo === 'contador') {
       return { contadorId: usuarioAtual.contadorId, empresaId: null };
     }
+
+    if (usuarioAtual.papel === Papel.CONTADOR_DONO && escopoNovo === 'empresa') {
+      if (!empresaIdSolicitado || !usuarioAtual.contadorId) {
+        throw new ForbiddenException('empresaId é obrigatório para criar usuário de escopo empresa');
+      }
+      const pertence = await this.empresasRepositorio.pertenceAoContador(
+        empresaIdSolicitado,
+        usuarioAtual.contadorId,
+      );
+      if (!pertence) {
+        throw new ForbiddenException('Esta empresa não pertence à sua carteira');
+      }
+      return { contadorId: null, empresaId: empresaIdSolicitado };
+    }
+
     if (usuarioAtual.papel === Papel.EMPRESARIO_DONO && escopoNovo === 'empresa') {
       return { contadorId: null, empresaId: usuarioAtual.empresaId };
     }
