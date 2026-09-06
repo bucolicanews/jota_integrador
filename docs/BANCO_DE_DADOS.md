@@ -29,7 +29,9 @@ PostgreSQL via Supabase. Complementa `docs/ARQUITETURA.md` (camadas, hierarquia 
 `papel_id` (FK), `permissao_id` (FK) — matriz N:N, resolvida pelo `ServicoDePermissoes` (`docs/ARQUITETURA.md §Permissões`)
 
 ### `usuarios`
-`id, nome, email, senha_hash, papel_id` (FK `papeis`), `contador_id` (FK nullable), `empresa_id` (FK nullable), `mfa_habilitado, mfa_secret_ref, status, bloqueado, bloqueado_em, bloqueado_motivo, bloqueado_por` (FK `usuarios`, auto-referência), `ultimo_login_em, criado_em, atualizado_em`
+Autenticação via **Supabase Auth** (decisão de 2026-09-06, mesmo padrão do DeliveryHub) — `usuarios` é tabela de **perfil**, não de credencial: `id` (PK, = `auth.users.id`, sem default próprio), `nome, email` (espelho de `auth.users.email`, útil pra join/exibição sem round-trip), `papel_id` (FK `papeis`), `contador_id` (FK nullable), `empresa_id` (FK nullable), `mfa_habilitado` (espelha MFA nativo do Supabase Auth, cache pra UI), `status, bloqueado, bloqueado_em, bloqueado_motivo, bloqueado_por` (FK `usuarios`, auto-referência), `ultimo_login_em, criado_em, atualizado_em`.
+
+Sem `senha_hash` (Supabase Auth guarda isso em `auth.users`, nunca duplicar) e sem tabela `refresh_tokens` própria (Supabase Auth já tem a dele em `auth`, não replicar).
 
 O `escopo` do `papel_id` do usuário precisa bater com o vínculo preenchido:
 
@@ -41,8 +43,7 @@ O `escopo` do `papel_id` do usuário precisa bater com o vínculo preenchido:
 
 Validar essa coerência na camada Application (não só confiar em constraint de banco) ao criar/editar usuário.
 
-### `refresh_tokens`
-`id, usuario_id` (FK), `token_hash, expira_em, revogado, ip, user_agent, criado_em`
+**Sincronização com `auth.users.app_metadata`** (mesmo padrão do `user_metadata.role` do DeliveryHub): toda vez que `usuarios.papel_id`/`contador_id`/`empresa_id` muda, o backend (via Admin API, service role) atualiza `app_metadata` do usuário no Supabase Auth com `{ papel: 'CONTADOR_DONO', contador_id: '...', empresa_id: null }`. As policies de RLS leem direto de `auth.jwt() -> 'app_metadata'` — nunca fazem subquery em `usuarios` (evita recursão de RLS e reconsulta ao banco a cada policy). Funções auxiliares SQL (`auth_contador_id()`, `auth_empresa_id()`, `auth_papel()`, `eh_super_admin()`) encapsulam essa leitura pra não repetir a expressão JSON em toda política.
 
 ---
 
