@@ -122,8 +122,13 @@ Sistema **separado** do §3 — aqui o dinheiro é da empresa para o contador (p
 ### Onboarding (campos em `contadores`, não tabela nova)
 `stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted` — sincronizados via webhook `account.updated` (assinado, confia direto). Contador clica "Conectar com Stripe" → backend cria conta Express (`accounts.create`) + link de onboarding hospedado (`accountLinks.create`) — mesmo fluxo do `/restaurante/config` do DeliveryHub.
 
+### `configuracoes_plataforma`
+Singleton (uma linha só): `comissao_honorarios_pct, atualizado_em, atualizado_por` (FK `usuarios`). **Comissão fixa e global da Jota** (decisão de 2026-09-06) — não é por contador nem por plano. Editável só por `SUPER_ADMIN`/`ADMIN_FINANCEIRO`, gera `logs_auditoria` a cada mudança (é parâmetro financeiro, afeta toda cobrança nova a partir da alteração).
+
 ### `cobrancas_honorarios`
 `id, contador_id` (FK), `empresa_id` (FK), `descricao, valor, comissao_pct, comissao_valor, stripe_payment_intent_id, status` (`pendente`|`pago`|`falhou`|`estornado`), `criado_em, atualizado_em, pago_em`
+
+`comissao_pct` é **congelado por cobrança** no momento da criação, copiado de `configuracoes_plataforma.comissao_honorarios_pct` — nunca recalculado depois. Se a Jota mudar a comissão global amanhã, cobranças já criadas mantêm a taxa antiga; só as novas usam a nova. Nunca fazer `cobrancas_honorarios` referenciar `configuracoes_plataforma` ao vivo (JOIN) para exibir/cobrar — é snapshot histórico, igual a preço de item em pedido já fechado.
 
 PaymentIntent criado como **destination charge**: `amount` = `valor`, `transfer_data.destination` = `contadores.stripe_account_id`, `application_fee_amount` = `comissao_valor` — dinheiro vive na conta da plataforma até o split, comissão retida automaticamente (mesmo mecanismo do DeliveryHub, `comissao_pct`/`comissao_padrao_pct`).
 
@@ -156,4 +161,4 @@ Catálogo fixo por decisão explícita (2026-09-06) — evoluir para papéis cus
 - Mecânica exata de autenticação do Modo B (certificado próprio) junto ao SERPRO — não confirmada, não implementar sem validar antes (`docs/SEGURANCA.md §1`).
 - ~~`pagamentos`: webhook real vs. manual~~ — **resolvido (2026-09-06):** webhook real, mesmo padrão do Connect do DeliveryHub (assinado, confia direto).
 - `documentos_fiscais_itens` (granularidade de NCM/CFOP por produto) — adiado pra Fase 2.
-- `comissao_pct` de honorários (§7): definido por contador, por plano, ou fixo global da Jota? Não decidido ainda — precisa de uma tela/config de onde esse percentual vem antes de implementar `cobrancas_honorarios`.
+- ~~`comissao_pct` de honorários: por contador, por plano, ou fixo global?~~ — **resolvido (2026-09-06):** comissão fixa e global da Jota, tabela `configuracoes_plataforma` (§7).
