@@ -18,9 +18,14 @@ interface LinhaContador {
   status: StatusContador;
   bloqueado: boolean;
   stripe_customer_id: string | null;
+  stripe_account_id: string | null;
+  stripe_charges_enabled: boolean;
+  stripe_payouts_enabled: boolean;
+  stripe_details_submitted: boolean;
 }
 
-const COLUNAS_SELECT = 'id, nome, cnpj_cpf, email, telefone, tipo, status, bloqueado, stripe_customer_id';
+const COLUNAS_SELECT =
+  'id, nome, cnpj_cpf, email, telefone, tipo, status, bloqueado, stripe_customer_id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted';
 
 @Injectable()
 export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort {
@@ -117,6 +122,35 @@ export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort 
     }
   }
 
+  async atualizarStripeAccountId(id: string, stripeAccountId: string): Promise<void> {
+    const { error } = await this.supabase.admin
+      .from('contadores')
+      .update({ stripe_account_id: stripeAccountId })
+      .eq('id', id);
+
+    if (error) {
+      throw new InternalServerErrorException(`Falha ao atualizar stripe_account_id: ${error.message}`);
+    }
+  }
+
+  async atualizarStatusStripeConnect(
+    id: string,
+    status: { chargesEnabled: boolean; payoutsEnabled: boolean; detailsSubmitted: boolean },
+  ): Promise<void> {
+    const { error } = await this.supabase.admin
+      .from('contadores')
+      .update({
+        stripe_charges_enabled: status.chargesEnabled,
+        stripe_payouts_enabled: status.payoutsEnabled,
+        stripe_details_submitted: status.detailsSubmitted,
+      })
+      .eq('id', id);
+
+    if (error) {
+      throw new InternalServerErrorException(`Falha ao atualizar status Stripe Connect: ${error.message}`);
+    }
+  }
+
   private mapear(linha: LinhaContador): Contador {
     return {
       id: linha.id,
@@ -128,6 +162,10 @@ export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort 
       status: linha.status,
       bloqueado: linha.bloqueado,
       stripeCustomerId: linha.stripe_customer_id,
+      stripeAccountId: linha.stripe_account_id,
+      stripeChargesEnabled: linha.stripe_charges_enabled,
+      stripePayoutsEnabled: linha.stripe_payouts_enabled,
+      stripeDetailsSubmitted: linha.stripe_details_submitted,
     };
   }
 }

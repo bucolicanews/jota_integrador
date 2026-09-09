@@ -10,6 +10,10 @@ export interface Contador {
   status: StatusContador;
   bloqueado: boolean;
   stripeCustomerId: string | null;
+  stripeAccountId: string | null;
+  stripeChargesEnabled: boolean;
+  stripePayoutsEnabled: boolean;
+  stripeDetailsSubmitted: boolean;
 }
 
 export interface DadosNovoContador {
@@ -33,6 +37,13 @@ export interface ContadoresRepositorioPort {
   marcarBloqueio(id: string, bloqueado: boolean, motivo: string | null, executadoPorId: string): Promise<void>;
   /** Só o backend chama (nunca vindo de um DTO de update genérico) -- setado ao criar o Stripe Customer na primeira assinatura. */
   atualizarStripeCustomerId(id: string, stripeCustomerId: string): Promise<void>;
+  /** Setado ao criar a conta Stripe Connect Express (onboarding de honorários). */
+  atualizarStripeAccountId(id: string, stripeAccountId: string): Promise<void>;
+  /** Só via webhook `account.updated` assinado (docs/SEGURANCA.md §7) -- nunca por endpoint que o frontend chama direto. */
+  atualizarStatusStripeConnect(
+    id: string,
+    status: { chargesEnabled: boolean; payoutsEnabled: boolean; detailsSubmitted: boolean },
+  ): Promise<void>;
 }
 
 export const CONTADORES_REPOSITORIO = Symbol('CONTADORES_REPOSITORIO');

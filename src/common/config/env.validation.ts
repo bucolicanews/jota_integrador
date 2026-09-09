@@ -36,6 +36,13 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   STRIPE_WEBHOOK_SECRET_ASSINATURAS!: string;
+
+  // Honorários (contador -> empresa, Stripe Connect) -- docs/SEGURANCA.md §7. Mesma
+  // secret key da plataforma acima, mas webhook secret PRÓPRIO (endpoint separado no
+  // dashboard Stripe: eventos de Connect, não de assinatura).
+  @IsString()
+  @IsNotEmpty()
+  STRIPE_WEBHOOK_SECRET_HONORARIOS!: string;
 }
 
 export function validate(config: Record<string, unknown>): EnvironmentVariables {

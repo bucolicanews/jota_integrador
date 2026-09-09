@@ -14,6 +14,7 @@ import { CreditosModule } from './creditos/creditos.module';
 import { ProcuracoesModule } from './procuracoes/procuracoes.module';
 import { CertificadosModule } from './certificados/certificados.module';
 import { AssinaturasModule } from './assinaturas/assinaturas.module';
+import { HonorariosModule } from './honorarios/honorarios.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AssinaturasModule } from './assinaturas/assinaturas.module';
     ProcuracoesModule,
     CertificadosModule,
     AssinaturasModule,
+    HonorariosModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
