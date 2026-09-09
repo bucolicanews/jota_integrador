@@ -1,4 +1,5 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { REGIMES_TRIBUTARIOS, RegimeTributario } from '../../dominio/empresa';
 
 export class AtualizarEmpresaDto {
   @IsOptional()
@@ -12,7 +13,6 @@ export class AtualizarEmpresaDto {
   nomeFantasia?: string | null;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  regimeTributario?: string | null;
+  @IsIn(REGIMES_TRIBUTARIOS)
+  regimeTributario?: RegimeTributario | null;
 }

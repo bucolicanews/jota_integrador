@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../../common/supabase/supabase.service';
-import { ModoAcessoSerpro, StatusEmpresa } from '../dominio/empresa';
+import { ModoAcessoSerpro, RegimeTributario, StatusEmpresa } from '../dominio/empresa';
 import {
   DadosAtualizacaoEmpresa,
   DadosNovaEmpresa,
@@ -14,7 +14,7 @@ interface LinhaEmpresa {
   razao_social: string;
   nome_fantasia: string | null;
   cnpj: string;
-  regime_tributario: string | null;
+  regime_tributario: RegimeTributario | null;
   modo_acesso_serpro: ModoAcessoSerpro;
   status: StatusEmpresa;
   bloqueado: boolean;

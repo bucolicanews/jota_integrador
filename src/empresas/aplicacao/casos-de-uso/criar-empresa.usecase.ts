@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { validarCnpj, ModoAcessoSerpro } from '../../dominio/empresa';
+import { validarCnpj, ModoAcessoSerpro, RegimeTributario } from '../../dominio/empresa';
 import {
   EMPRESAS_REPOSITORIO,
   Empresa,
@@ -11,7 +11,7 @@ export interface EntradaCriarEmpresa {
   razaoSocial: string;
   nomeFantasia: string | null;
   cnpj: string;
-  regimeTributario: string | null;
+  regimeTributario: RegimeTributario | null;
   modoAcessoSerpro: ModoAcessoSerpro;
 }
 

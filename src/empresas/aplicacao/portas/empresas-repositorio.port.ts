@@ -1,4 +1,4 @@
-import { ModoAcessoSerpro, StatusEmpresa } from '../../dominio/empresa';
+import { ModoAcessoSerpro, RegimeTributario, StatusEmpresa } from '../../dominio/empresa';
 
 export interface Empresa {
   id: string;
@@ -6,7 +6,7 @@ export interface Empresa {
   razaoSocial: string;
   nomeFantasia: string | null;
   cnpj: string;
-  regimeTributario: string | null;
+  regimeTributario: RegimeTributario | null;
   modoAcessoSerpro: ModoAcessoSerpro;
   status: StatusEmpresa;
   bloqueado: boolean;
@@ -17,14 +17,14 @@ export interface DadosNovaEmpresa {
   razaoSocial: string;
   nomeFantasia: string | null;
   cnpj: string;
-  regimeTributario: string | null;
+  regimeTributario: RegimeTributario | null;
   modoAcessoSerpro: ModoAcessoSerpro;
 }
 
 export interface DadosAtualizacaoEmpresa {
   razaoSocial?: string;
   nomeFantasia?: string | null;
-  regimeTributario?: string | null;
+  regimeTributario?: RegimeTributario | null;
 }
 
 export interface EmpresasRepositorioPort {

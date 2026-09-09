@@ -1,5 +1,5 @@
 import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { ModoAcessoSerpro } from '../../dominio/empresa';
+import { ModoAcessoSerpro, REGIMES_TRIBUTARIOS, RegimeTributario } from '../../dominio/empresa';
 
 export class CriarEmpresaDto {
   // Só usado/aceito quando quem chama é SUPER_ADMIN -- para qualquer outro papel o
@@ -26,9 +26,8 @@ export class CriarEmpresaDto {
   cnpj!: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
-  regimeTributario?: string | null;
+  @IsIn(REGIMES_TRIBUTARIOS)
+  regimeTributario?: RegimeTributario | null;
 
   @IsIn(['procuracao', 'certificado_proprio'])
   modoAcessoSerpro!: ModoAcessoSerpro;
