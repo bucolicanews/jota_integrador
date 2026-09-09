@@ -27,9 +27,10 @@ coverage/
 *.p12
 *.cer
 
-# Certificados digitais (A1/A3) — NUNCA versionar sob nenhuma hipótese
-**/certificates/
-**/certificados/
+# Certificados digitais (A1/A3) — NUNCA versionar sob nenhuma hipótese. Regra por
+# EXTENSÃO, não por nome de diretório: "**/certificados/" bloqueava também o módulo de
+# domínio `src/certificados/` (código-fonte, não certificado nenhum) -- as extensões
+# abaixo (já duplicadas mais acima) já cobrem o risco real sem esse conflito.
 *.pfx
 *.p12
 

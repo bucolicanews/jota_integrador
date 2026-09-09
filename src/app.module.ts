@@ -4,11 +4,15 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { validate } from './common/config/env.validation';
 import { SupabaseModule } from './common/supabase/supabase.module';
+import { AuditoriaModule } from './common/auditoria/auditoria.module';
+import { CofreModule } from './common/cofre/cofre.module';
 import { AuthModule } from './auth/auth.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { ContadoresModule } from './contadores/contadores.module';
 import { SerproModule } from './serpro/serpro.module';
 import { CreditosModule } from './creditos/creditos.module';
+import { ProcuracoesModule } from './procuracoes/procuracoes.module';
+import { CertificadosModule } from './certificados/certificados.module';
 
 @Module({
   imports: [
@@ -25,11 +29,15 @@ import { CreditosModule } from './creditos/creditos.module';
     // cobre os endpoints que o NestJS realmente expõe.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     SupabaseModule,
+    AuditoriaModule,
+    CofreModule,
     AuthModule,
     EmpresasModule,
     ContadoresModule,
     CreditosModule,
     SerproModule,
+    ProcuracoesModule,
+    CertificadosModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

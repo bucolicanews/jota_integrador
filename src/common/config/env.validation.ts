@@ -19,6 +19,13 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   APP_ALLOWED_ORIGINS!: string;
+
+  // Chave mestra do cofre de certificados digitais (Modo B, docs/SEGURANCA.md §1) --
+  // 32 bytes em base64 (AES-256). Gerar com `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+  // Nunca reaproveitar entre ambientes (dev/produção) nem versionar um valor real.
+  @IsString()
+  @IsNotEmpty()
+  CERTIFICADO_CHAVE_MESTRA!: string;
 }
 
 export function validate(config: Record<string, unknown>): EnvironmentVariables {
