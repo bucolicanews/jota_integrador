@@ -34,6 +34,7 @@ export class SerproGatewayHttp implements SerproGatewayPort {
       idSistema: params.idSistema,
       idServico: params.idServico,
       dados: params.dados,
+      documentoTrial: params.documentoTrial,
     });
 
     return this.executarComRetryDeAuth(envelope, ambiente);
@@ -100,9 +101,22 @@ export class SerproGatewayHttp implements SerproGatewayPort {
     }
 
     return {
-      sucesso: resposta.ok,
+      // HTTP 200 sozinho NÃO significa sucesso -- o SERPRO embrulha erro de negócio
+      // (ex: payload de `dados` inválido) dentro de um HTTP 200 com um `status` interno
+      // diferente de 200 (confirmado testando de verdade: CAIXAPOSTAL devolveu HTTP 200
+      // + `"status":400` pra um `dados` malformado). O campo vem ora como número, ora
+      // como string ("200") dependendo do serviço -- por isso o Number() antes de comparar.
+      // Serviços que não populam esse campo mantêm o comportamento antigo (só HTTP).
+      sucesso: resposta.ok && this.statusInternoIndicaSucesso(corpo),
       statusHttp: resposta.status,
       corpo,
     };
+  }
+
+  private statusInternoIndicaSucesso(corpo: unknown): boolean {
+    const statusInterno = (corpo as { status?: unknown } | null)?.status;
+    if (statusInterno === undefined || statusInterno === null) return true;
+    const numero = Number(statusInterno);
+    return !Number.isNaN(numero) && numero >= 200 && numero < 300;
   }
 }

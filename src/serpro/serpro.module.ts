@@ -24,5 +24,8 @@ import { VerificarAcessoSerproSupabase } from './infraestrutura/verificar-acesso
     { provide: CONSULTAS_SERPRO_REPOSITORIO, useClass: ConsultasSerproRepositorioSupabase },
     ConsultarCcmeiUseCase,
   ],
+  // Exportados pra caixa_postal/ reusar a mesma checagem de acesso + gateway + log de
+  // consultas -- nenhum outro módulo SERPRO deveria reimplementar isso.
+  exports: [SERPRO_GATEWAY, VERIFICAR_ACESSO_SERPRO, CONSULTAS_SERPRO_REPOSITORIO],
 })
 export class SerproModule {}

@@ -9,6 +9,8 @@ export interface ParametrosConsultaSerpro {
   idServico: string;
   contribuinteCnpj: string;
   dados?: string;
+  /** Só tem efeito em ambiente trial -- ver comentário de `montarEnvelope` (dominio/serpro.ts) sobre por que os cenários de demonstração exigem CNPJs fixos diferentes entre si. */
+  documentoTrial?: string;
 }
 
 /**

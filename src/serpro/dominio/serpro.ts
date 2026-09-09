@@ -24,13 +24,23 @@ export interface EnvelopeSerpro {
   pedidoDados: PedidoDadosSerpro;
 }
 
+// Valor original, confirmado funcionando pro cenário trial de CCMEI (dado fixo,
+// ignora o valor de entrada) e é o único que o cenário MSGDETALHAMENTO62 aceita.
 export const CNPJ_TRIAL = '00000000000000';
 
 /**
  * Monta o envelope padrão de toda chamada ao SERPRO (docs/SEGURANCA.md §3). Em ambiente
- * trial, contratante/autorPedidoDados/contribuinte são sempre o CNPJ fixo de
+ * trial, contratante/autorPedidoDados/contribuinte são sempre um CNPJ fixo de
  * demonstração -- nunca usar CNPJ real nesse ambiente (confirmado nos cenários de teste
  * oficiais do SERPRO).
+ *
+ * `documentoTrial` é sobrescrevível por chamada (default `CNPJ_TRIAL`) porque os
+ * cenários de demonstração do SERPRO são inconsistentes ENTRE SI sobre qual CNPJ fixo
+ * aceitam -- confirmado testando de verdade: CCMEI e CAIXAPOSTAL/MSGDETALHAMENTO62 só
+ * aceitam 00000000000000, mas CAIXAPOSTAL/MSGCONTRIBUINTE61 só aceita 99999999999999
+ * (o outro valor dá "Dados inválidos", HTTP 200 com status 400 interno). Isso é uma
+ * particularidade do AMBIENTE TRIAL apenas -- em produção esse parâmetro não é usado
+ * (contratante/contribuinte vêm sempre do CNPJ real).
  */
 export function montarEnvelope(params: {
   ambiente: AmbienteSerpro;
@@ -40,9 +50,10 @@ export function montarEnvelope(params: {
   idSistema: string;
   idServico: string;
   dados?: string;
+  documentoTrial?: string;
 }): EnvelopeSerpro {
   if (params.ambiente === 'trial') {
-    const documentoTrial: DocumentoSerpro = { numero: CNPJ_TRIAL, tipo: 2 };
+    const documentoTrial: DocumentoSerpro = { numero: params.documentoTrial ?? CNPJ_TRIAL, tipo: 2 };
     return {
       contratante: documentoTrial,
       autorPedidoDados: documentoTrial,

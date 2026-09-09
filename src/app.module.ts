@@ -15,6 +15,7 @@ import { ProcuracoesModule } from './procuracoes/procuracoes.module';
 import { CertificadosModule } from './certificados/certificados.module';
 import { AssinaturasModule } from './assinaturas/assinaturas.module';
 import { HonorariosModule } from './honorarios/honorarios.module';
+import { CaixaPostalModule } from './caixa-postal/caixa-postal.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { HonorariosModule } from './honorarios/honorarios.module';
     CertificadosModule,
     AssinaturasModule,
     HonorariosModule,
+    CaixaPostalModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
