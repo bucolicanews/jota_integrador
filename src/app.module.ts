@@ -17,6 +17,8 @@ import { AssinaturasModule } from './assinaturas/assinaturas.module';
 import { HonorariosModule } from './honorarios/honorarios.module';
 import { CaixaPostalModule } from './caixa-postal/caixa-postal.module';
 import { AuditoriaLogsModule } from './auditoria/auditoria.module';
+import { PlanoDeContasModule } from './plano-de-contas/plano-de-contas.module';
+import { LancamentosContabeisModule } from './lancamentos-contabeis/lancamentos-contabeis.module';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { AuditoriaLogsModule } from './auditoria/auditoria.module';
     HonorariosModule,
     CaixaPostalModule,
     AuditoriaLogsModule,
+    PlanoDeContasModule,
+    LancamentosContabeisModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
