@@ -17,9 +17,10 @@ interface LinhaContador {
   tipo: TipoContador;
   status: StatusContador;
   bloqueado: boolean;
+  stripe_customer_id: string | null;
 }
 
-const COLUNAS_SELECT = 'id, nome, cnpj_cpf, email, telefone, tipo, status, bloqueado';
+const COLUNAS_SELECT = 'id, nome, cnpj_cpf, email, telefone, tipo, status, bloqueado, stripe_customer_id';
 
 @Injectable()
 export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort {
@@ -105,6 +106,17 @@ export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort 
     }
   }
 
+  async atualizarStripeCustomerId(id: string, stripeCustomerId: string): Promise<void> {
+    const { error } = await this.supabase.admin
+      .from('contadores')
+      .update({ stripe_customer_id: stripeCustomerId })
+      .eq('id', id);
+
+    if (error) {
+      throw new InternalServerErrorException(`Falha ao atualizar stripe_customer_id: ${error.message}`);
+    }
+  }
+
   private mapear(linha: LinhaContador): Contador {
     return {
       id: linha.id,
@@ -115,6 +127,7 @@ export class ContadoresRepositorioSupabase implements ContadoresRepositorioPort 
       tipo: linha.tipo,
       status: linha.status,
       bloqueado: linha.bloqueado,
+      stripeCustomerId: linha.stripe_customer_id,
     };
   }
 }

@@ -74,11 +74,12 @@ export class CreditosRepositorioSupabase implements CreditosRepositorioPort {
     return data as number;
   }
 
-  async creditar(contadorId: string, quantidade: number, motivo: string): Promise<number> {
+  async creditar(contadorId: string, quantidade: number, motivo: string, tipoOperacao?: string): Promise<number> {
     const { data, error } = await this.supabase.admin.rpc('creditar_creditos', {
       p_contador_id: contadorId,
       p_quantidade: quantidade,
       p_motivo: motivo,
+      ...(tipoOperacao ? { p_tipo_operacao: tipoOperacao } : {}),
     });
 
     if (error) {

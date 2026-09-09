@@ -26,6 +26,16 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   CERTIFICADO_CHAVE_MESTRA!: string;
+
+  // Assinatura SaaS (contador -> Jota), sem Connect -- docs/SEGURANCA.md §6. Segredo só
+  // aqui/Secret Manager, nunca em tabela (ADR-002-POLITICA-CREDENCIAIS).
+  @IsString()
+  @IsNotEmpty()
+  STRIPE_SECRET_KEY!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  STRIPE_WEBHOOK_SECRET_ASSINATURAS!: string;
 }
 
 export function validate(config: Record<string, unknown>): EnvironmentVariables {

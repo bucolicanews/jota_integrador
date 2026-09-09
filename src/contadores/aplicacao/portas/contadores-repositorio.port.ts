@@ -9,6 +9,7 @@ export interface Contador {
   tipo: TipoContador;
   status: StatusContador;
   bloqueado: boolean;
+  stripeCustomerId: string | null;
 }
 
 export interface DadosNovoContador {
@@ -30,6 +31,8 @@ export interface ContadoresRepositorioPort {
   listar(): Promise<Contador[]>;
   atualizar(id: string, dados: DadosAtualizacaoContador): Promise<void>;
   marcarBloqueio(id: string, bloqueado: boolean, motivo: string | null, executadoPorId: string): Promise<void>;
+  /** Só o backend chama (nunca vindo de um DTO de update genérico) -- setado ao criar o Stripe Customer na primeira assinatura. */
+  atualizarStripeCustomerId(id: string, stripeCustomerId: string): Promise<void>;
 }
 
 export const CONTADORES_REPOSITORIO = Symbol('CONTADORES_REPOSITORIO');

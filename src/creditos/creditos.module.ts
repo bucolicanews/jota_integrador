@@ -22,6 +22,8 @@ import { CreditosRepositorioSupabase } from './infraestrutura/creditos.repositor
   // (ex: serpro/, ao pagar por uma consulta real) -- exportar os casos de uso aqui
   // (não só o token do repositório) porque eles carregam a regra de custo por operação
   // (docs/creditos/dominio/credito.ts), não é só um CRUD que outro módulo reimplementaria.
-  exports: [CREDITOS_REPOSITORIO, DebitarCreditosUseCase, EstornarCreditosUseCase],
+  // CreditarCreditosUseCase também exportado -- assinaturas/ usa pra creditar
+  // automaticamente na renovação (webhook Stripe), mesmo caso de uso do ajuste manual.
+  exports: [CREDITOS_REPOSITORIO, DebitarCreditosUseCase, EstornarCreditosUseCase, CreditarCreditosUseCase],
 })
 export class CreditosModule {}

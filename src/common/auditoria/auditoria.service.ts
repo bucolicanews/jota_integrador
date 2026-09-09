@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 export interface RegistroAuditoria {
-  usuarioId: string;
+  /** null quando não há usuário humano por trás da ação (ex: webhook de gateway de pagamento) -- logs_auditoria.usuario_id é FK pra `usuarios`, nunca usar contadorId/empresaId aqui por engano. */
+  usuarioId: string | null;
   contadorId?: string | null;
   empresaId?: string | null;
   acao: string;

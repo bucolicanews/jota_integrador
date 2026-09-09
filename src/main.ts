@@ -6,7 +6,11 @@ import { AppModule } from './app.module';
 import { SaldoInsuficienteFilter } from './common/filtros/saldo-insuficiente.filter';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true -- popula req.rawBody com o body exato recebido, sem reserializar.
+  // Verificação de assinatura de webhook (Stripe) precisa dos bytes originais; o
+  // ValidationPipe/parser JSON padrão já teria alterado formatação (espaços, ordem de
+  // chaves) o suficiente pra invalidar o HMAC.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService);
 
   app.use(helmet());

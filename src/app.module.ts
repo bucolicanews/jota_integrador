@@ -13,6 +13,7 @@ import { SerproModule } from './serpro/serpro.module';
 import { CreditosModule } from './creditos/creditos.module';
 import { ProcuracoesModule } from './procuracoes/procuracoes.module';
 import { CertificadosModule } from './certificados/certificados.module';
+import { AssinaturasModule } from './assinaturas/assinaturas.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CertificadosModule } from './certificados/certificados.module';
     SerproModule,
     ProcuracoesModule,
     CertificadosModule,
+    AssinaturasModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
