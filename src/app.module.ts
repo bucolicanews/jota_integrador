@@ -16,6 +16,7 @@ import { CertificadosModule } from './certificados/certificados.module';
 import { AssinaturasModule } from './assinaturas/assinaturas.module';
 import { HonorariosModule } from './honorarios/honorarios.module';
 import { CaixaPostalModule } from './caixa-postal/caixa-postal.module';
+import { AuditoriaLogsModule } from './auditoria/auditoria.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { CaixaPostalModule } from './caixa-postal/caixa-postal.module';
     AssinaturasModule,
     HonorariosModule,
     CaixaPostalModule,
+    AuditoriaLogsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
